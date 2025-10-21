@@ -1,5 +1,6 @@
 import { Button, Card, Col, Container, Row, Table } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { BsCart3 } from 'react-icons/bs';
 import { useEcomarket } from '../context/EcomarketContext.jsx';
 
 export default function CarritoPage() {
@@ -8,7 +9,7 @@ export default function CarritoPage() {
   return (
     <Container className="py-5">
       <section>
-        <h2 className="mb-4">Carrito</h2>
+        <h2 className="mb-4 d-flex align-items-center gap-2">Carrito<BsCart3 /></h2>
         <Card className="shadow-sm">
           <Card.Body>
             {cart.length === 0 ? (

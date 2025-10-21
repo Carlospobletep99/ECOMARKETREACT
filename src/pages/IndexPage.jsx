@@ -4,7 +4,8 @@ export default function IndexPage() {
   return (
     <section className="hero-section">
       <Container className="py-5">
-        <div className="hero-overlay">
+        <div className="hero-overlay"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.72)' }}>
           <h1 className="display-5 mb-4">PRODUCTOS ECOLÓGICOS</h1>
           <p>
             En Ecomarket creemos que cada pequeña acción puede generar un gran cambio. Somos una tienda dedicada a ofrecer

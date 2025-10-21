@@ -1,4 +1,5 @@
 import { Card, Col, Container, Row } from 'react-bootstrap';
+import { BsInstagram } from 'react-icons/bs';
 
 export default function NosotrosPage() {
   return (
@@ -19,11 +20,8 @@ export default function NosotrosPage() {
                   <h3 className="fw-semibold">Quilpué</h3>
                   <p className="mb-1">📍 Av. Los Carrera 1234, Quilpué</p>
                   <p className="mb-1">📞 (32) 1234 5678</p>
-                  <p className="mb-3">📧 contacto@ecomarket.cl</p>
-                  <p className="mb-0">
-                    <i className="bi bi-instagram me-2" aria-hidden="true"></i>
-                    @ecomarket
-                  </p>
+                  <p className="mb-1">📧 contacto@ecomarket.cl</p>
+                  <p className="mb-1"><BsInstagram className="me-2 text-danger" />@ecomarket</p>
                 </Col>
               </Row>
             </Card.Body>

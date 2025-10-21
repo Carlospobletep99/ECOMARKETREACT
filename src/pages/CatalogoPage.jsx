@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
 import { products } from '../data/products.js';
+import { BsCardChecklist } from 'react-icons/bs';
 import { useEcomarket } from '../context/EcomarketContext.jsx';
 
 export default function CatalogoPage() {
@@ -25,6 +26,7 @@ export default function CatalogoPage() {
   return (
     <Container className="py-5">
       <section className="catalog-controls p-4 shadow-sm mb-4">
+        <h2 className="mb-4 d-flex align-items-center gap-2">Catálogo<BsCardChecklist /></h2>    
         <Form className="row g-3" onSubmit={event => event.preventDefault()}>
           <Col md={8}>
             <Form.Control
@@ -43,7 +45,6 @@ export default function CatalogoPage() {
       </section>
 
       <section>
-        <h2 className="mb-4">Catálogo</h2>
         <Row xs={1} sm={2} md={3} className="g-4">
           {filteredProducts.map(product => (
             <Col key={product.codigo}>
