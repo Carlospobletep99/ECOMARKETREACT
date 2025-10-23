@@ -7,6 +7,16 @@ import { useEcomarket } from '../context/EcomarketContext.jsx';
 export default function CatalogoPage() {
   const { addToCart } = useEcomarket();
   const [query, setQuery] = useState('');
+ 
+ 
+  // Aqui se inicia las cantidades de productos en 1
+  const [qtys, setQtys] = useState(() =>
+    Object.fromEntries(products.map(p => [p.codigo, 1]))
+  );
+
+  // Poner cantidad para agregar al carrito
+
+
 
   const filteredProducts = useMemo(() => {
     const lowerQuery = query.trim().toLowerCase();
@@ -22,6 +32,35 @@ export default function CatalogoPage() {
   }, [query]);
 
   const handleClear = () => setQuery('');
+
+
+  // argumento :  esta función change QTY recibe dos argumentos: el código del producto (codigo) y el cambio en la cantidad (delta), que puede ser +1 o -1.
+  const changeQty = (codigo, delta) => {
+    setQtys(prev => {
+      const current = prev[codigo] ?? 1;
+      const next = Math.max(1, current + delta);
+      return { ...prev, [codigo]: next };
+    });
+  };
+
+  const handleAddToCart = product => {
+    const cantidad = qtys[product.codigo] ?? 1;
+    // Si addToCart acepta (product, cantidad) lo llamamos, si no
+    // intentamos pasar el producto con la propiedad cantidad.
+    try {
+      if (typeof addToCart === 'function') {
+        if (addToCart.length >= 2) {
+          addToCart(product, cantidad);
+        } else {
+          addToCart({ ...product, cantidad });
+        }
+      }
+    } catch (e) {
+      // fallback simple
+      addToCart({ ...product, cantidad });
+    }
+  };
+////----------------------------------------------
 
   return (
     <Container className="py-5">
@@ -54,6 +93,29 @@ export default function CatalogoPage() {
                   <Card.Title>{product.nombre}</Card.Title>
                   <Card.Text className="small text-muted">{product.descripcion}</Card.Text>
                   <Card.Text className="fw-semibold mb-3">${product.precio.toLocaleString('es-CL')}</Card.Text>
+
+                  {/* Controles de cantidad */}
+                  <div className="d-flex align-items-center gap-2 mb-3">
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => changeQty(product.codigo, -1)}
+                    >
+                      −
+                    </Button>
+                    <div style={{ minWidth: 40 }} className="text-center">
+                      {qtys[product.codigo] ?? 1}
+                    </div>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => changeQty(product.codigo, +1)}
+                    >
+                      +
+                    </Button>
+                  </div>
+                  {/* Controles de cantidad */}
+
                   <Button variant="success" onClick={() => addToCart(product)} className="mt-auto">
                     Agregar al carrito
                   </Button>
