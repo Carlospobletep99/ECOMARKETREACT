@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
@@ -12,6 +12,7 @@ export function EcomarketProvider({ children }) {
   const [users, setUsers] = useLocalStorage(USERS_KEY, []);
   const [user, setUser] = useLocalStorage(ACTIVE_USER_KEY, null);
   const [cart, setCart] = useLocalStorage(CART_KEY, []);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const register = ({ nombre, email, tel, pass, pass2 }) => {
     const trimmedEmail = email.trim().toLowerCase();
@@ -97,12 +98,43 @@ export function EcomarketProvider({ children }) {
       }
       return [...prev, { ...product, cantidad: 1 }];
     });
+    setIsCartOpen(true);
   };
 
   const clearCart = () => setCart([]);
 
+  const removeFromCart = codigo => {
+    setCart(prev => prev.filter(item => item.codigo !== codigo));
+  };
+
+  const incrementQuantity = codigo => {
+    setCart(prev =>
+      prev.map(item =>
+        item.codigo === codigo ? { ...item, cantidad: item.cantidad + 1 } : item
+      )
+    );
+  };
+
+  const decrementQuantity = codigo => {
+    setCart(prev =>
+      prev.map(item =>
+        item.codigo === codigo
+          ? { ...item, cantidad: Math.max(1, item.cantidad - 1) }
+          : item
+      )
+    );
+  };
+
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
+
   const cartTotal = useMemo(
     () => cart.reduce((acc, item) => acc + item.precio * item.cantidad, 0),
+    [cart]
+  );
+
+  const cartItemCount = useMemo(
+    () => cart.reduce((acc, item) => acc + item.cantidad, 0),
     [cart]
   );
 
@@ -112,14 +144,21 @@ export function EcomarketProvider({ children }) {
       user,
       cart,
       cartTotal,
+      cartItemCount,
+      isCartOpen,
       register,
       login,
       logout,
       updateProfile,
       addToCart,
-      clearCart
+      clearCart,
+      removeFromCart,
+      incrementQuantity,
+      decrementQuantity,
+      openCart,
+      closeCart
     }),
-    [users, user, cart, cartTotal]
+    [users, user, cart, cartTotal, cartItemCount, isCartOpen]
   );
 
   return <EcomarketContext.Provider value={value}>{children}</EcomarketContext.Provider>;

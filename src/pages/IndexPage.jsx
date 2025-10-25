@@ -19,7 +19,6 @@ export default function IndexPage() {
           </p>
           <p>
             Porque para nosotros, no se trata solo de vender, sino de inspirar un cambio hacia un futuro más verde y sostenible.
-            🌍💚
           </p>
         </div>
       </Container>
