@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Col, Container, Form, Row } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
-import { useEcomarket } from '../context/EcomarketContext.jsx';
+import { useCarrito } from '../context/CarritoContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
+// FECHA MÍNIMA PERMITIDA PARA EL PEDIDO
 function getTomorrowISO() {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -10,18 +11,22 @@ function getTomorrowISO() {
 }
 
 export default function PedidoPage() {
-  const { cart, cartTotal, clearCart, user } = useEcomarket();
-  const navigate = useNavigate();
+  // CONTEXTO DEL CARRITO Y DEL USUARIO
+  const { cart, cartTotal, finalizeOrder } = useCarrito();
+  const { user } = useAuth();
   const [form, setForm] = useState({ fecha: getTomorrowISO(), direccion: '', comentarios: '' });
   const [status, setStatus] = useState(null);
 
+  // FECHA MÍNIMA PARA EL CALENDARIO
   const minDate = useMemo(() => getTomorrowISO(), []);
 
+  // SINCRONIZA LOS CAMPOS DEL FORMULARIO
   const handleChange = event => {
     const { name, value } = event.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // VALIDA LOS DATOS Y FINALIZA EL PEDIDO
   const handleSubmit = event => {
     event.preventDefault();
     if (cart.length === 0) {
@@ -33,17 +38,20 @@ export default function PedidoPage() {
       return;
     }
 
-    clearCart();
+    const result = finalizeOrder();
+    if (!result.ok) {
+      setStatus({ variant: 'danger', message: result.message ?? 'No pudimos confirmar tu pedido.' });
+      return;
+    }
+
     setStatus({ variant: 'success', message: '¡Pedido confirmado! Te enviaremos los detalles al correo registrado.' });
-    setTimeout(() => {
-      navigate('/');
-    }, 1500);
   };
 
   return (
     <Container className="py-5">
       <Row className="justify-content-center">
         <Col lg={8}>
+          {/* FORMULARIO DE CONFIRMACIÓN DE PEDIDO */}
           <section className="p-4 shadow-sm bg-white rounded-4">
             <h2 className="mb-4">Pedido</h2>
             <Form onSubmit={handleSubmit} className="row g-3">

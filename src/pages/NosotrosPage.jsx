@@ -4,12 +4,14 @@ import { BsInstagram } from 'react-icons/bs';
 export default function NosotrosPage() {
   return (
     <Container className="py-5">
+      {/* INFO TIENDA */}
       <Row className="justify-content-center">
         <Col lg={10}>
           <Card className="shadow-sm border-0">
             <Card.Body className="p-4">
               <h2 className="mb-3">Nuestras tiendas</h2>
               <p className="text-muted">Cobertura: V Región.</p>
+              {/* MAPA Y DETALLE DE SUCURSALES */}
               <Row className="g-4 align-items-center">
                 <Col md={6}>
                   <Card className="shadow-sm border-0 h-100">

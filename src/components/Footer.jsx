@@ -1,6 +1,6 @@
-import { Container, Row, Col } from 'react-bootstrap';
+import { Col, Container, Row } from 'react-bootstrap';
 
-export default function SiteFooter() {
+export default function Footer() {
   return (
     <footer className="bg-light py-4 mt-auto">
       <Container>

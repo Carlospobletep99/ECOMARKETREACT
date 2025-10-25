@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { Alert, Button, Col, Container, Form, Row } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useEcomarket } from '../context/EcomarketContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function RegistroPage() {
-  const { register } = useEcomarket();
+  // CONTEXTO Y ESTADOS DEL REGISTRO
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ nombre: '', email: '', tel: '', pass: '', pass2: '' });
   const [status, setStatus] = useState(null);
 
+  // SINCRONIZA INPUTS CON EL ESTADO
   const handleChange = event => {
     const { name, value } = event.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // REALIZA EL REGISTRO Y REDIRIGE AL PERFIL
   const handleSubmit = event => {
     event.preventDefault();
     const result = register(form);
@@ -27,6 +30,7 @@ export default function RegistroPage() {
     <Container className="py-5">
       <Row className="justify-content-center">
         <Col md={8} lg={7}>
+          {/* FORMULARIO DE CREACIÓN DE CUENTA */}
           <section className="p-4 shadow-sm bg-white rounded-4">
             <h2 className="mb-4">Crear cuenta</h2>
             <Form onSubmit={handleSubmit} className="row g-3">

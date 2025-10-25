@@ -1,17 +1,21 @@
 import { Outlet } from 'react-router-dom';
-import NavigationBar from './NavigationBar.jsx';
-import SiteFooter from './SiteFooter.jsx';
-import CartDrawer from './CartDrawer.jsx';
+import NavBar from './NavBar.jsx';
+import Footer from './Footer.jsx';
+import Carrito from './Carrito.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Layout() {
+  const { user } = useAuth();
+  const isAdmin = user?.isAdmin;
+
   return (
     <div className="d-flex flex-column min-vh-100">
-      <NavigationBar />
+      <NavBar />
       <main className="flex-grow-1">
         <Outlet />
       </main>
-      <SiteFooter />
-      <CartDrawer />
+      <Footer />
+      {!isAdmin && <Carrito />}
     </div>
   );
 }

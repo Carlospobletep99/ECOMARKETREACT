@@ -3,6 +3,7 @@ import { Container } from 'react-bootstrap';
 export default function IndexPage() {
   return (
     <section className="hero-section">
+      {/* SECCIÓN HERO DE LA PORTADA */}
       <Container className="py-5">
         <div className="hero-overlay"
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.72)' }}>

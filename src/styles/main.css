@@ -1,13 +1,16 @@
+/* CONFIGURACIÓN BASE */
 :root {
   color-scheme: light;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+/* FONDO GLOBAL DEL SITIO */
 body {
   margin: 0;
-  background-color: #f8f9fa;
+  background-color: #dadada;
 }
 
+/* UTILIDADES DE COLOR */
 .text-green {
   color: #006920 !important;
 }
@@ -16,6 +19,7 @@ body {
   background-color: #006920 !important;
 }
 
+/* SECCIÓN HERO DE LA PORTADA */
 .hero-section {
   position: relative;
   min-height: 70vh;
@@ -44,6 +48,7 @@ body {
   font-size: 1.05rem;
 }
 
+/* CATÁLOGO */
 .catalog-controls {
   background-color: #fff;
   border-radius: 0.75rem;
@@ -60,15 +65,28 @@ body {
   flex-direction: column;
 }
 
+/* TABLAS GENERALES */
 .table thead {
   background-color: #e9f5ec;
 }
 
+/* FORMULARIOS */
 .form-helper {
   font-size: 0.9rem;
-  color: #6c757d;
+  color: #ff0000;
 }
 
+.form-control {
+  border: 1px solid #979797;
+  box-shadow: none;
+}
+
+.form-control:focus {
+  border-color: #006920;
+  box-shadow: 0 0 0 0.1rem rgba(0, 105, 32, 0.25);
+}
+
+/* CARRITO DESPLEGABLE */
 .cart-offcanvas {
   width: min(100vw, 380px);
 }
@@ -80,7 +98,7 @@ body {
 
 .cart-items-list .list-group-item {
   border: none;
-  border-bottom: 1px solid #efe9e9;
+  border-bottom: 1px solid #727272;
   padding-bottom: 1.25rem;
 }
 
@@ -92,7 +110,7 @@ body {
   width: 64px;
   height: 64px;
   object-fit: contain;
-  background-color: #f8f9fa;
+  background-color: #ffffff;
   padding: 0.25rem;
 }
 
@@ -103,4 +121,8 @@ body {
 
 .cart-remove-btn:hover {
   text-decoration: none;
+}
+
+.cart-offcanvas .border-top {
+  border-top: 1px solid #727272 !important;
 }

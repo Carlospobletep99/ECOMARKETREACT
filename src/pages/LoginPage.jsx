@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { Alert, Button, Col, Container, Form, Row } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useEcomarket } from '../context/EcomarketContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function LoginPage() {
-  const { login } = useEcomarket();
+  // CONTEXTO Y ESTADOS DEL FORMULARIO
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', pass: '' });
   const [status, setStatus] = useState(null);
 
+  // ACTUALIZA CAMPOS AL ESCRIBIR
   const handleChange = event => {
     const { name, value } = event.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // INTENTA INICIAR SESIÓN Y REDIRIGE AL PERFIL
   const handleSubmit = event => {
     event.preventDefault();
     const result = login(form);
@@ -27,6 +30,7 @@ export default function LoginPage() {
     <Container className="py-5">
       <Row className="justify-content-center">
         <Col md={6}>
+          {/* FORMULARIO DE INGRESO */}
           <section className="p-4 shadow-sm bg-white rounded-4">
             <h2 className="mb-4">Ingresar</h2>
             <Form onSubmit={handleSubmit} className="row g-3">
