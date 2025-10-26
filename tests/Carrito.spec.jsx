@@ -45,7 +45,7 @@ describe('Carrito', () => {
   });
 
   // VERIFICA EL ESTADO VACÍO DEL CARRITO:
-  it('muestra mensaje vacío cuando no hay productos', () => {
+  it('Muestra mensaje "Vacío" cuando no hay productos', () => {
     useCarrito.mockReturnValue({
       cart: [],
       cartTotal: 0,
@@ -63,7 +63,7 @@ describe('Carrito', () => {
   });
 
   // VALIDA LAS ACCIONES CUANDO HAY PRODUCTOS EN EL CARRITO:
-  it('renderiza productos y permite ajustar cantidades', async () => {
+  it('Renderiza productos y permite ajustar cantidades', async () => {
     const incrementQuantity = vi.fn();
     const decrementQuantity = vi.fn();
     const removeFromCart = vi.fn();

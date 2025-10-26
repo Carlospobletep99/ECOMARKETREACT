@@ -32,7 +32,7 @@ describe('NavBar', () => {
   });
 
   // VALIDA LA VISTA PARA INVITADOS:
-  it('muestra los enlaces públicos cuando no hay sesión iniciada', () => {
+  it('Muestra los enlaces publicos cuando NO hay sesión iniciada, oculta "Perfil"', () => {
     useAuth.mockReturnValue({ user: null });
     useCarrito.mockReturnValue({ openCart: vi.fn() });
 
@@ -40,13 +40,16 @@ describe('NavBar', () => {
 
     expect(screen.getByRole('link', { name: 'Inicio' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Catálogo' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Carrito' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Pedido' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Nosotros' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ingresar' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Registro' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Perfil' })).not.toBeInTheDocument();
   });
 
   // COMPRUEBA EL FLUJO DE CLIENTE CON CARRITO DISPONIBLE:
-  it('oculta login/registro y abre el carrito cuando el cliente hace click', async () => {
+  it('Oculta login/registro y abre el carrito cuando hay sesion iniciada', async () => {
     const openCart = vi.fn();
     useAuth.mockReturnValue({ user: { nombre: 'Ana', isAdmin: false } });
     useCarrito.mockReturnValue({ openCart });
@@ -63,7 +66,7 @@ describe('NavBar', () => {
   });
 
   // ASEGURA LA VISTA EXCLUSIVA PARA ADMINISTRADORES:
-  it('muestra solo el enlace de administrador cuando el usuario es admin', () => {
+  it('Muestra solo el enlace de administrador (panel de gestion) cuando el usuario es admin', () => {
     useAuth.mockReturnValue({ user: { nombre: 'Admin', isAdmin: true } });
     useCarrito.mockReturnValue({ openCart: vi.fn() });
 
