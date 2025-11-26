@@ -100,6 +100,38 @@ export function CarritoProvider({ children }) {
     [setCart]
   );
 
+  // Actualiza la cantidad de un ítem a un valor específico.
+  const updateCartQuantity = useCallback(
+    (codigo, cantidad) => {
+      const parsedCantidad = Number(cantidad);
+      if (!Number.isInteger(parsedCantidad) || parsedCantidad < 0) {
+        // No hacer nada si no es un entero válido o es negativo
+        return;
+      }
+
+      const catalogProduct = products.find(item => item.codigo === codigo);
+      const availableStock = catalogProduct?.cantidad ?? 0;
+
+      setCart(prev => {
+        if (parsedCantidad === 0) {
+          // Si la cantidad es 0, eliminar el producto del carrito
+          return prev.filter(item => item.codigo !== codigo);
+        }
+
+        return prev.map(item => {
+          if (item.codigo !== codigo) {
+            return item;
+          }
+
+          // Limitar la cantidad al stock disponible
+          const nextCantidad = Math.min(parsedCantidad, availableStock);
+          return { ...item, cantidad: nextCantidad };
+        });
+      });
+    },
+    [products, setCart]
+  );
+
   const openCart = useCallback(() => setIsCartOpen(true), []);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
 
@@ -220,6 +252,7 @@ export function CarritoProvider({ children }) {
       removeFromCart,
       incrementQuantity,
       decrementQuantity,
+      updateCartQuantity,
       openCart,
       closeCart,
       finalizeOrder,
@@ -234,6 +267,7 @@ export function CarritoProvider({ children }) {
       removeFromCart,
       incrementQuantity,
       decrementQuantity,
+      updateCartQuantity,
       openCart,
       closeCart,
       finalizeOrder,

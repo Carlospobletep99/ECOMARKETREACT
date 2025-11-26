@@ -1,4 +1,5 @@
-import { Button, Image, ListGroup, Offcanvas } from 'react-bootstrap';
+import { useState } from 'react';
+import { Button, Form, Image, ListGroup, Offcanvas } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { BsDash, BsPlus, BsTrash } from 'react-icons/bs';
 import { useCarrito } from '../context/CarritoContext.jsx';
@@ -13,9 +14,36 @@ export default function Carrito() {
     closeCart,
     incrementQuantity,
     decrementQuantity,
-    removeFromCart
+    removeFromCart,
+    updateCartQuantity
   } = useCarrito();
   const { products } = useInventario();
+  const [draftQuantities, setDraftQuantities] = useState({});
+
+  const handleDraftChange = (codigo, value) => {
+    setDraftQuantities(prev => ({ ...prev, [codigo]: value }));
+  };
+
+  const handleDraftBlur = (codigo, cantidadActual) => {
+    const draftValue = draftQuantities[codigo];
+    // Si el valor en el borrador no es un número válido o es igual a la cantidad actual, no hacemos nada.
+    if (draftValue === undefined || isNaN(Number(draftValue)) || Number(draftValue) === cantidadActual) {
+      // Limpiamos el valor del borrador para que el input vuelva a mostrar la cantidad real.
+      setDraftQuantities(prev => {
+        const next = { ...prev };
+        delete next[codigo];
+        return next;
+      });
+      return;
+    }
+    updateCartQuantity(codigo, draftValue);
+    // Limpiamos el valor del borrador después de actualizar.
+    setDraftQuantities(prev => {
+      const next = { ...prev };
+      delete next[codigo];
+      return next;
+    });
+  };
 
   return (
     <Offcanvas show={isCartOpen} onHide={closeCart} placement="end" className="cart-offcanvas">
@@ -32,6 +60,8 @@ export default function Carrito() {
                 const product = products?.find(prod => prod.codigo === item.codigo);
                 const availableStock = product?.cantidad ?? 0;
                 const isMaxStock = availableStock !== 0 ? item.cantidad >= availableStock : true;
+                const draftValue = draftQuantities[item.codigo];
+                const displayQuantity = draftValue !== undefined ? draftValue : item.cantidad;
 
                 return (
                   <ListGroup.Item key={item.codigo} className="cart-item px-0">
@@ -63,13 +93,22 @@ export default function Carrito() {
                             <Button
                               variant="outline-success"
                               size="sm"
-                              disabled={item.cantidad === 1}
+                              disabled={item.cantidad <= 1}
                               onClick={() => decrementQuantity(item.codigo)}
                             >
                               <BsDash aria-hidden="true" />
                               <span className="visually-hidden">Restar uno</span>
                             </Button>
-                            <span className="cart-quantity-value fw-semibold">{item.cantidad}</span>
+                            <Form.Control
+                              type="number"
+                              className="text-center"
+                              style={{ width: '60px' }}
+                              value={displayQuantity}
+                              onChange={e => handleDraftChange(item.codigo, e.target.value)}
+                              onBlur={() => handleDraftBlur(item.codigo, item.cantidad)}
+                              onKeyDown={e => e.key === 'Enter' && e.target.blur()}
+                              min="0"
+                            />
                             <Button
                               variant="outline-success"
                               size="sm"
