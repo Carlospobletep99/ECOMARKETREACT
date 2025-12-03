@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { BsDash, BsPlus, BsTrash } from 'react-icons/bs';
 import { useCarrito } from '../context/CarritoContext.jsx';
 import { useInventario } from '../context/InventarioContext.jsx';
+import { formatearMoneda } from '../utils/formatearMoneda.js';
 
 export default function Carrito() {
   const {
@@ -21,6 +22,20 @@ export default function Carrito() {
   const [draftQuantities, setDraftQuantities] = useState({});
 
   const handleDraftChange = (codigo, value) => {
+    // Validar en tiempo real: solo permitir números enteros no negativos
+    const parsed = Number(value);
+    
+    // Si el valor está vacío, permitirlo (el usuario está borrando)
+    if (value === '') {
+      setDraftQuantities(prev => ({ ...prev, [codigo]: value }));
+      return;
+    }
+    
+    // Si no es un número válido, no actualizar el estado
+    if (isNaN(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
+      return;
+    }
+    
     setDraftQuantities(prev => ({ ...prev, [codigo]: value }));
   };
 
@@ -62,6 +77,9 @@ export default function Carrito() {
                 const isMaxStock = availableStock !== 0 ? item.cantidad >= availableStock : true;
                 const draftValue = draftQuantities[item.codigo];
                 const displayQuantity = draftValue !== undefined ? draftValue : item.cantidad;
+                
+                // Validar si el valor ingresado excede el stock disponible
+                const draftExceedsStock = draftValue !== undefined && draftValue !== '' && Number(draftValue) > availableStock;
 
                 return (
                   <ListGroup.Item key={item.codigo} className="cart-item px-0">
@@ -71,7 +89,7 @@ export default function Carrito() {
                         <div className="d-flex justify-content-between align-items-start">
                           <div>
                             <h6 className="mb-1">{item.nombre}</h6>
-                            <p className="mb-0 text-muted small">${item.precio.toLocaleString('es-CL')} c/u</p>
+                            <p className="mb-0 text-muted small">{formatearMoneda(item.precio)} c/u</p>
                             <p className="mb-0 text-muted small">
                               Unidad: {item.unidadMedida ?? 'Unidad'}
                             </p>
@@ -102,7 +120,7 @@ export default function Carrito() {
                             <Form.Control
                               type="number"
                               className="text-center"
-                              style={{ width: '60px' }}
+                              style={{ width: '80px' }}
                               value={displayQuantity}
                               onChange={e => handleDraftChange(item.codigo, e.target.value)}
                               onBlur={() => handleDraftBlur(item.codigo, item.cantidad)}
@@ -120,12 +138,17 @@ export default function Carrito() {
                             </Button>
                           </div>
                           <span className="fw-semibold">
-                            ${(item.precio * item.cantidad).toLocaleString('es-CL')}
+                            {formatearMoneda(item.precio * item.cantidad)}
                           </span>
                         </div>
-                        {isMaxStock && (
+                        {isMaxStock && !draftExceedsStock && (
                           <p className="text-danger small mt-2 mb-0">
                             Alcanzaste el stock máximo disponible.
+                          </p>
+                        )}
+                        {draftExceedsStock && (
+                          <p className="text-danger small mt-2 mb-0">
+                            La cantidad no puede exceder el stock disponible ({availableStock} unidades).
                           </p>
                         )}
                       </div>
@@ -139,7 +162,7 @@ export default function Carrito() {
                 <span>
                   Total ({cartItemCount} {cartItemCount === 1 ? 'producto' : 'productos'})
                 </span>
-                <span>${cartTotal.toLocaleString('es-CL')}</span>
+                <span>{formatearMoneda(cartTotal)}</span>
               </div>
               <div className="d-flex flex-column gap-2">
                 <Button as={Link} to="/pedido" variant="success" onClick={closeCart}>

@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
     if (pass !== pass2) {
       errors.push('Las contraseñas no coinciden.');
     }
-    if (trimmedEmail && (!trimmedEmail.includes('@') || !trimmedEmail.includes('.'))) {
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       errors.push('El correo electrónico no es válido.');
     }
     if (tel && !/^\+?\d+$/.test(tel.trim())) {
@@ -97,7 +97,7 @@ export function AuthProvider({ children }) {
   }, [setUser]);
 
   // EDICION DEL PERFIL:
-  const updateProfile = useCallback(({ nombre, tel }) => {
+  const updateProfile = useCallback(({ nombre, email, tel }) => {
     if (!user) {
       return { ok: false, message: 'Debes iniciar sesión.' };
     }
@@ -107,19 +107,51 @@ export function AuthProvider({ children }) {
     if (!nombre.trim()) {
       return { ok: false, message: 'El nombre no puede estar vacío.' };
     }
+    if (!tel || !tel.trim()) {
+      return { ok: false, message: 'El teléfono es obligatorio.' };
+    }
+    if (!/^\+?\d+$/.test(tel.trim())) {
+      return { ok: false, message: 'El número telefónico no es válido.' };
+    }
+
+    // Si el email cambió, verificar que no esté en uso por otro usuario
+    if (email && email.trim().toLowerCase() !== user.email.toLowerCase()) {
+      const emailExiste = users.some(u => u.email.toLowerCase() === email.trim().toLowerCase() && u.email !== user.email);
+      if (emailExiste) {
+        return { ok: false, message: 'El correo electrónico ya está registrado.' };
+      }
+    }
+
+    const nuevoEmail = email?.trim().toLowerCase() || user.email;
 
     setUsers(prev =>
-      prev.map(u => (u.email === user.email ? { ...u, nombre: nombre.trim(), tel: tel.trim() } : u))
+      prev.map(u => (u.email === user.email ? { ...u, nombre: nombre.trim(), email: nuevoEmail, tel: tel.trim() } : u))
     );
-    const updatedUser = { ...user, nombre: nombre.trim(), tel: tel.trim() };
+    const updatedUser = { ...user, nombre: nombre.trim(), email: nuevoEmail, tel: tel.trim() };
     setUser(updatedUser);
     return { ok: true, message: 'Perfil actualizado con éxito.' };
-  }, [setUser, setUsers, user]);
+  }, [setUser, setUsers, user, users]);
+
+  // ELIMINAR CUENTA:
+  const eliminarCuenta = useCallback((password) => {
+    if (!user) return { ok: false, message: 'No hay sesión activa.' };
+    
+    const currentUserRecord = users.find(u => u.email === user.email);
+    if (!currentUserRecord) return { ok: false, message: 'Usuario no encontrado.' };
+
+    if (currentUserRecord.pass !== password) {
+      return { ok: false, message: 'La contraseña es incorrecta.' };
+    }
+
+    setUsers(prev => prev.filter(u => u.email !== user.email));
+    setUser(null);
+    return { ok: true, message: 'Cuenta eliminada correctamente.' };
+  }, [user, users, setUsers, setUser]);
 
   // DISPONIBLES PARA TODA LA APP:
   const value = useMemo(
-    () => ({ users, user, register, login, logout, updateProfile }),
-    [users, user, register, login, logout, updateProfile]
+    () => ({ users, user, register, login, logout, updateProfile, eliminarCuenta }),
+    [users, user, register, login, logout, updateProfile, eliminarCuenta]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

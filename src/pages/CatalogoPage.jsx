@@ -1,40 +1,46 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
 import { useInventario } from '../context/InventarioContext.jsx';
 import { useCarrito } from '../context/CarritoContext.jsx';
+import { formatearMoneda } from '../utils/formatearMoneda.js';
 
 export default function CatalogoPage() {
   // CONTEXTO Y ESTADOS LOCALES
   const { products } = useInventario();
   const { addToCart } = useCarrito();
   const [query, setQuery] = useState('');
-  const [feedback, setFeedback] = useState(null);
+  const [alerta, setAlerta] = useState(null);
 
   // FILTRA PRODUCTOS SEGÚN BÚSQUEDA
   const filteredProducts = useMemo(() => {
     const source = Array.isArray(products) ? products : [];
-    const lowerQuery = query.trim().toLowerCase();
-    if (!lowerQuery) {
+    const sanitizedQuery = query.trim().replace(/[<>"'%;()&+]/g, '').toLowerCase();
+    if (!sanitizedQuery) {
       return source;
     }
     return source.filter(product => {
       return (
-        product.nombre.toLowerCase().includes(lowerQuery) ||
-        product.codigo.toLowerCase().includes(lowerQuery)
+        product.nombre.toLowerCase().includes(sanitizedQuery) ||
+        product.codigo.toLowerCase().includes(sanitizedQuery)
       );
     });
   }, [products, query]);
 
   const handleClear = () => setQuery('');
 
+  // TÍTULO DINÁMICO DE LA PÁGINA
+  useEffect(() => {
+    document.title = 'Catálogo - Ecomarket';
+  }, []);
+
   // AGREGA PRODUCTO Y MUESTRA ALERTA SI NO HAY STOCK
   const handleAddToCart = product => {
     const result = addToCart(product);
     if (!result.ok) {
-      setFeedback({ variant: 'warning', message: result.message });
+      setAlerta({ variant: 'warning', message: result.message });
       return;
     }
-    setFeedback(null);
+    setAlerta(null);
   };
 
   return (
@@ -52,14 +58,14 @@ export default function CatalogoPage() {
             />
           </Col>
           <Col md={4} className="text-md-end">
-            <Button variant="success" className="w-100" onClick={handleClear}>
+            <Button variant="outline-secondary" className="w-100" onClick={handleClear}>
               Limpiar
             </Button>
           </Col>
         </Form>
-        {feedback && (
-          <Alert variant={feedback.variant} className="mt-3 mb-0">
-            {feedback.message}
+        {alerta && (
+          <Alert variant={alerta.variant} className="mt-3 mb-0">
+            {alerta.message}
           </Alert>
         )}
       </section>
@@ -80,8 +86,13 @@ export default function CatalogoPage() {
                   <Card.Text className="small text-muted mb-2">
                     Stock disponible: <span className="fw-semibold">{product.cantidad}</span>
                   </Card.Text>
-                  <Card.Text className="fw-semibold mb-3">${product.precio.toLocaleString('es-CL')}</Card.Text>
-                  <Button variant="success" onClick={() => handleAddToCart(product)} className="mt-auto">
+                  <Card.Text className="fw-semibold mb-3">{formatearMoneda(product.precio)}</Card.Text>
+                  <Button 
+                    variant="success" 
+                    onClick={() => handleAddToCart(product)} 
+                    className="mt-auto"
+                    disabled={product.cantidad === 0}
+                  >
                     Agregar al carrito
                   </Button>
                 </Card.Body>

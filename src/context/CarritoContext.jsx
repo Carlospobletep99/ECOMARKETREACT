@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 import { useInventario } from './InventarioContext.jsx';
@@ -12,6 +12,41 @@ export function CarritoProvider({ children }) {
   const [cart, setCart] = useLocalStorage(CART_KEY, []);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { products, setProducts } = useInventario();
+
+  // SINCRONIZAR CARRITO CUANDO CAMBIA EL INVENTARIO:
+  // Elimina productos que ya no existen o ajusta cantidades que exceden el stock
+  useEffect(() => {
+    setCart(prevCart => {
+      return prevCart
+        .map(item => {
+          const producto = products.find(p => p.codigo === item.codigo);
+          
+          // Si el producto fue eliminado del inventario, eliminarlo del carrito
+          if (!producto) {
+            return null;
+          }
+
+          // Si la cantidad en el carrito excede el stock disponible, ajustarla
+          let nuevaCantidad = item.cantidad;
+          if (item.cantidad > producto.cantidad) {
+            nuevaCantidad = producto.cantidad;
+          }
+
+          // Si no hay stock (0), eliminar del carrito
+          if (producto.cantidad === 0 || nuevaCantidad === 0) {
+            return null;
+          }
+
+          // IMPORTANTE: Actualizamos TODOS los datos del producto (precio, nombre, imagen)
+          // Esto asegura que si el admin cambia el precio, se actualice en el carrito del usuario
+          return { 
+            ...producto, // Copiamos los datos frescos del inventario
+            cantidad: nuevaCantidad // Mantenemos la cantidad ajustada
+          };
+        })
+        .filter(Boolean); // Elimina items null
+    });
+  }, [products, setCart]);
 
   // OPERACIONES SOBRE EL CARRITO:
   // Agrega una unidad y abre el carrito cuando la acción es válida.

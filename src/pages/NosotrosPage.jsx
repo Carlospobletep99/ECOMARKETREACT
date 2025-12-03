@@ -1,7 +1,12 @@
+import { useEffect } from 'react';
 import { Card, Col, Container, Row } from 'react-bootstrap';
 import { BsInstagram } from 'react-icons/bs';
 
 export default function NosotrosPage() {
+  // TÍTULO DINÁMICO DE LA PÁGINA
+  useEffect(() => {
+    document.title = 'Nosotros - Ecomarket';
+  }, []);
   return (
     <Container className="py-5">
       {/* INFO TIENDA */}
@@ -15,7 +20,7 @@ export default function NosotrosPage() {
               <Row className="g-4 align-items-center">
                 <Col md={6}>
                   <Card className="shadow-sm border-0 h-100">
-                    <Card.Img variant="top" src="/images/mapa.jpg" alt="Mapa tienda Viña del Mar" />
+                    <Card.Img variant="top" src="/images/mapa.jpg" alt="Mapa tienda Quilpué" />
                   </Card>
                 </Col>
                 <Col md={6}>

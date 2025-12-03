@@ -13,7 +13,6 @@ export function useLocalStorage(key, defaultValue) {
       const stored = window.localStorage.getItem(key);
       return stored ? JSON.parse(stored) : defaultValue;
     } catch (error) {
-      console.error('No se pudo leer localStorage', error);
       return defaultValue;
     }
   });
@@ -27,7 +26,7 @@ export function useLocalStorage(key, defaultValue) {
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.error('No se pudo guardar en localStorage', error);
+      // Error silencioso - localStorage no disponible o lleno
     }
   }, [key, value]);
 

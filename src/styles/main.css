@@ -71,11 +71,6 @@ body {
 }
 
 /* FORMULARIOS */
-.form-helper {
-  font-size: 0.9rem;
-  color: #ff0000;
-}
-
 .form-control {
   border: 1px solid #979797;
   box-shadow: none;

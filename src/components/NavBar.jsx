@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
-import { Container, Image, Nav, Navbar } from 'react-bootstrap';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Container, Image, Nav, Navbar, Button } from 'react-bootstrap';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCarrito } from '../context/CarritoContext.jsx';
+import AlertaConfirmacion from './AlertaConfirmacion.jsx';
 
 const customerLinks = [
   { to: '/', label: 'Inicio' },
@@ -18,11 +19,19 @@ const customerLinks = [
 const adminLinks = [{ to: '/perfil', label: 'Administrador' }];
 
 export default function NavBar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { openCart } = useCarrito();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [mostrarAlertaLogout, setMostrarAlertaLogout] = useState(false);
   const iconSrc = user ? '/images/perfil_on.png' : '/images/perfil_off.png';
   const isAdmin = user?.isAdmin;
+
+  const handleLogoutConfirm = () => {
+    logout();
+    setMostrarAlertaLogout(false);
+    navigate('/');
+  };
 
   const visibleLinks = useMemo(() => {
     if (isAdmin) {
@@ -100,11 +109,32 @@ export default function NavBar() {
                   </Nav.Link>
                 );
               })}
+              {user && (
+                <Button 
+                  variant="outline-danger" 
+                  size="sm" 
+                  className="ms-lg-2"
+                  onClick={() => setMostrarAlertaLogout(true)}
+                >
+                  Cerrar sesión
+                </Button>
+              )}
               <Image src={iconSrc} alt="Estado de sesión" width={30} height={30} roundedCircle />
             </Nav>
           </Navbar.Collapse>
         </Container>
       </Navbar>
+
+      <AlertaConfirmacion
+        mostrar={mostrarAlertaLogout}
+        alCerrar={() => setMostrarAlertaLogout(false)}
+        alConfirmar={handleLogoutConfirm}
+        titulo="Cerrar sesión"
+        mensaje="¿Estás seguro de que deseas cerrar tu sesión?"
+        textoConfirmar="Cerrar sesión"
+        textoCancelar="Cancelar"
+        variante="danger"
+      />
     </header>
   );
 }

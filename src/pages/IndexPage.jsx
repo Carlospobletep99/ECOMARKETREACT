@@ -1,12 +1,16 @@
+import { useEffect } from 'react';
 import { Container } from 'react-bootstrap';
 
 export default function IndexPage() {
+  // TÍTULO DINÁMICO DE LA PÁGINA
+  useEffect(() => {
+    document.title = 'Inicio - Ecomarket';
+  }, []);
   return (
     <section className="hero-section">
       {/* SECCIÓN HERO DE LA PORTADA */}
       <Container className="py-5">
-        <div className="hero-overlay"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.72)' }}>
+        <div className="hero-overlay">
           <h1 className="display-5 mb-4">PRODUCTOS ECOLÓGICOS</h1>
           <p>
             En Ecomarket creemos que cada pequeña acción puede generar un gran cambio. Somos una tienda dedicada a ofrecer

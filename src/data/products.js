@@ -4,7 +4,7 @@ export const products = [
     nombre: 'Manzana Orgánica Certificada',
     descripcion:
       'Manzanas cultivadas sin pesticidas ni fertilizantes químicos. Certificación orgánica SAG. Huella de carbono neutral.',
-    fechaVencimiento: '2024-12-15',
+    fechaVencimiento: '2025-12-15',
     categoria: 'Frutas Orgánicas',
     cantidad: 50,
     precio: 1500,
@@ -17,7 +17,7 @@ export const products = [
     nombre: 'Palta Hass Biodinámica',
     descripcion:
       'Paltas cultivadas con agricultura biodinámica, sin químicos sintéticos. Certificación Demeter internacional.',
-    fechaVencimiento: '2024-09-20',
+    fechaVencimiento: '2026-03-20',
     categoria: 'Frutas Orgánicas',
     cantidad: 45,
     precio: 2500,
@@ -30,7 +30,7 @@ export const products = [
     nombre: 'Espinaca Baby Hidropónica Ecológica',
     descripcion:
       'Espinacas baby cultivadas en sistema hidropónico cerrado, sin pesticidas. Agua reciclada 100%.',
-    fechaVencimiento: '2024-09-15',
+    fechaVencimiento: '2026-03-15',
     categoria: 'Verduras Ecológicas',
     cantidad: 35,
     precio: 1800,
@@ -43,7 +43,7 @@ export const products = [
     nombre: 'Kale Orgánico Premium',
     descripcion:
       'Súper alimento kale cultivado orgánicamente. Rico en antioxidantes, hierro y vitamina K. Libre de agroquímicos.',
-    fechaVencimiento: '2024-09-18',
+    fechaVencimiento: '2026-03-18',
     categoria: 'Verduras Ecológicas',
     cantidad: 25,
     precio: 2200,
@@ -56,7 +56,7 @@ export const products = [
     nombre: 'Quinoa Tricolor Orgánica',
     descripcion:
       'Quinoa orgánica tricolor (blanca, roja, negra) del altiplano andino. Comercio justo y agricultura regenerativa.',
-    fechaVencimiento: '2025-08-30',
+    fechaVencimiento: '2026-08-30',
     categoria: 'Súper Alimentos',
     cantidad: 40,
     precio: 3200,
@@ -82,7 +82,7 @@ export const products = [
     nombre: 'Leche de Almendras Orgánica',
     descripcion:
       'Bebida vegetal de almendras orgánicas, sin azúcar añadido. Envase 100% reciclable, producción carbono neutral.',
-    fechaVencimiento: '2024-10-25',
+    fechaVencimiento: '2026-04-25',
     categoria: 'Lácteos Vegetales',
     cantidad: 30,
     precio: 1800,
@@ -95,7 +95,7 @@ export const products = [
     nombre: 'Queso Vegano de Anacardos',
     descripcion:
       'Queso artesanal vegano elaborado con anacardos orgánicos. Sin lactosa, libre de crueldad animal. Fermentado naturalmente.',
-    fechaVencimiento: '2024-10-10',
+    fechaVencimiento: '2026-04-10',
     categoria: 'Lácteos Vegetales',
     cantidad: 20,
     precio: 3200,

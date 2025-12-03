@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Col, Container, Form, Row } from 'react-bootstrap';
 import { useCarrito } from '../context/CarritoContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -14,11 +14,22 @@ export default function PedidoPage() {
   // CONTEXTO DEL CARRITO Y DEL USUARIO
   const { cart, cartTotal, finalizeOrder } = useCarrito();
   const { user } = useAuth();
-  const [form, setForm] = useState({ fecha: getTomorrowISO(), direccion: '', comentarios: '' });
-  const [status, setStatus] = useState(null);
+  const [form, setForm] = useState({ 
+    fecha: getTomorrowISO(), 
+    direccion: '', 
+    comentarios: '',
+    email: '',
+    tel: ''
+  });
+  const [alerta, setAlerta] = useState(null);
 
   // FECHA MÍNIMA PARA EL CALENDARIO
   const minDate = useMemo(() => getTomorrowISO(), []);
+
+  // TÍTULO DINÁMICO DE LA PÁGINA
+  useEffect(() => {
+    document.title = 'Mi Pedido - Ecomarket';
+  }, []);
 
   // SINCRONIZA LOS CAMPOS DEL FORMULARIO
   const handleChange = event => {
@@ -30,21 +41,40 @@ export default function PedidoPage() {
   const handleSubmit = event => {
     event.preventDefault();
     if (cart.length === 0) {
-      setStatus({ variant: 'danger', message: 'Tu carrito está vacío. Agrega productos antes de confirmar.' });
+      setAlerta({ variant: 'danger', message: 'Tu carrito está vacío. Agrega productos antes de confirmar.' });
       return;
     }
     if (!form.direccion.trim()) {
-      setStatus({ variant: 'danger', message: 'Por favor, ingresa una dirección de entrega.' });
+      setAlerta({ variant: 'danger', message: 'Por favor, ingresa una dirección de entrega.' });
       return;
+    }
+
+    // VALIDACIÓN PARA USUARIOS INVITADOS
+    if (!user) {
+      if (!form.email.trim() || !form.tel.trim()) {
+        setAlerta({ variant: 'danger', message: 'Por favor, completa tus datos de contacto (email y teléfono).' });
+        return;
+      }
+      // Validación de formato de email (misma regex que en otros formularios)
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        setAlerta({ variant: 'danger', message: 'Por favor, ingresa un correo electrónico válido.' });
+        return;
+      }
+      // Validación de teléfono (mismo patrón que en Registro)
+      if (!/^\+?\d+$/.test(form.tel.trim())) {
+        setAlerta({ variant: 'danger', message: 'El número telefónico no es válido.' });
+        return;
+      }
     }
 
     const result = finalizeOrder();
     if (!result.ok) {
-      setStatus({ variant: 'danger', message: result.message ?? 'No pudimos confirmar tu pedido.' });
+      setAlerta({ variant: 'danger', message: result.message ?? 'No pudimos confirmar tu pedido.' });
       return;
     }
 
-    setStatus({ variant: 'success', message: '¡Pedido confirmado! Te enviaremos los detalles al correo registrado.' });
+    const emailDestino = user ? user.email : form.email;
+    setAlerta({ variant: 'success', message: `¡Pedido confirmado! Te enviaremos los detalles a ${emailDestino}` });
   };
 
   return (
@@ -55,6 +85,36 @@ export default function PedidoPage() {
           <section className="p-4 shadow-sm bg-white rounded-4">
             <h2 className="mb-4">Pedido</h2>
             <Form onSubmit={handleSubmit} className="row g-3">
+              {!user && (
+                <>
+                  <Col md={6}>
+                    <Form.Label htmlFor="email">Email de contacto</Form.Label>
+                    <Form.Control
+                      type="email"
+                      id="email"
+                      name="email"
+                      placeholder="tu@correo.com"
+                      value={form.email}
+                      onChange={handleChange}
+                      autoComplete="email"
+                      required
+                    />
+                  </Col>
+                  <Col md={6}>
+                    <Form.Label htmlFor="tel">Teléfono</Form.Label>
+                    <Form.Control
+                      type="tel"
+                      id="tel"
+                      name="tel"
+                      placeholder="+56912345678"
+                      value={form.tel}
+                      onChange={handleChange}
+                      autoComplete="tel"
+                      required
+                    />
+                  </Col>
+                </>
+              )}
               <Col md={6}>
                 <Form.Label htmlFor="fecha">Fecha preferida de entrega</Form.Label>
                 <Form.Control
@@ -65,7 +125,7 @@ export default function PedidoPage() {
                   value={form.fecha}
                   onChange={handleChange}
                 />
-                <Form.Text className="form-helper">Selecciona cualquier día a partir de mañana.</Form.Text>
+                <Form.Text className="text-muted">Selecciona cualquier día a partir de mañana.</Form.Text>
               </Col>
               <Col md={6}>
                 <Form.Label htmlFor="direccion">Dirección</Form.Label>
@@ -76,6 +136,8 @@ export default function PedidoPage() {
                   placeholder="Calle, número, comuna"
                   value={form.direccion}
                   onChange={handleChange}
+                  autoComplete="street-address"
+                  required
                 />
               </Col>
               <Col xs={12}>
@@ -101,10 +163,10 @@ export default function PedidoPage() {
                   Confirmar pedido
                 </Button>
               </Col>
-              {status && (
+              {alerta && (
                 <Col xs={12}>
-                  <Alert variant={status.variant} className="mb-0">
-                    {status.message}
+                  <Alert variant={alerta.variant} className="mb-0">
+                    {alerta.message}
                   </Alert>
                 </Col>
               )}

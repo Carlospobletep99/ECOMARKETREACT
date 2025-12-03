@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Button, Col, Container, Form, Row } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -8,7 +8,12 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', pass: '' });
-  const [status, setStatus] = useState(null);
+  const [alerta, setAlerta] = useState(null);
+
+  // TÍTULO DINÁMICO DE LA PÁGINA
+  useEffect(() => {
+    document.title = 'Ingresar - Ecomarket';
+  }, []);
 
   // ACTUALIZA CAMPOS AL ESCRIBIR
   const handleChange = event => {
@@ -20,7 +25,7 @@ export default function LoginPage() {
   const handleSubmit = event => {
     event.preventDefault();
     const result = login(form);
-    setStatus({ variant: result.ok ? 'success' : 'danger', message: result.message });
+    setAlerta({ variant: result.ok ? 'success' : 'danger', message: result.message });
     if (result.ok) {
       setTimeout(() => navigate('/perfil'), 800);
     }
@@ -44,6 +49,7 @@ export default function LoginPage() {
                   value={form.email}
                   onChange={handleChange}
                   autoComplete="email"
+                  required
                 />
               </Col>
               <Col xs={12}>
@@ -56,6 +62,7 @@ export default function LoginPage() {
                   value={form.pass}
                   onChange={handleChange}
                   autoComplete="current-password"
+                  required
                 />
               </Col>
               <Col xs={12} className="mt-3">
@@ -63,10 +70,10 @@ export default function LoginPage() {
                   Ingresar
                 </Button>
               </Col>
-              {status && (
+              {alerta && (
                 <Col xs={12}>
-                  <Alert variant={status.variant} className="mb-0">
-                    {status.message}
+                  <Alert variant={alerta.variant} className="mb-0">
+                    {alerta.message}
                   </Alert>
                 </Col>
               )}

@@ -1,25 +1,35 @@
 import { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
 import { useInventario } from '../context/InventarioContext.jsx';
 import { useCarrito } from '../context/CarritoContext.jsx';
+import FormularioProducto from './FormularioProducto.jsx';
+import AlertaConfirmacion from './AlertaConfirmacion.jsx';
+import { formatearMoneda } from '../utils/formatearMoneda.js';
 
-export default function PanelAdmin({ onLogout }) {
-  const { products } = useInventario();
+export default function PanelAdmin() {
+  const { products, crearProducto, editarProducto, eliminarProducto } = useInventario();
   const { updateProductStock } = useCarrito();
   const [query, setQuery] = useState('');
   const [draftStock, setDraftStock] = useState({});
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [productoEditar, setProductoEditar] = useState(null);
+  const [alerta, setAlerta] = useState(null);
+  
+  // ESTADO PARA EL MODAL DE CONFIRMACIÓN
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+  const [productoAEliminar, setProductoAEliminar] = useState(null);
 
   const filteredProducts = useMemo(() => {
     const source = Array.isArray(products) ? products : [];
-    const lowerQuery = query.trim().toLowerCase();
-    if (!lowerQuery) {
+    const sanitizedQuery = query.trim().replace(/[<>"'%;()&+]/g, '').toLowerCase();
+    if (!sanitizedQuery) {
       return source;
     }
     return source.filter(product => {
       return (
-        product.nombre.toLowerCase().includes(lowerQuery) ||
-        product.codigo.toLowerCase().includes(lowerQuery)
+        product.nombre.toLowerCase().includes(sanitizedQuery) ||
+        product.codigo.toLowerCase().includes(sanitizedQuery)
       );
     });
   }, [products, query]);
@@ -33,7 +43,70 @@ export default function PanelAdmin({ onLogout }) {
     const result = updateProductStock(codigo, draftStock[codigo]);
     if (result.ok) {
       setDraftStock(prev => ({ ...prev, [codigo]: '' }));
+      setAlerta({ variant: 'success', message: 'Stock actualizado correctamente.' });
+      setTimeout(() => setAlerta(null), 3000);
+    } else {
+      setAlerta({ variant: 'danger', message: result.message });
+      setTimeout(() => setAlerta(null), 3000);
     }
+  };
+
+  // MANEJADORES PARA CREAR/EDITAR/ELIMINAR
+  const handleCrearNuevo = () => {
+    setProductoEditar(null);
+    setMostrarFormulario(true);
+  };
+
+  const handleEditarProducto = (producto) => {
+    setProductoEditar(producto);
+    setMostrarFormulario(true);
+  };
+
+  const handleEliminarProducto = (codigo, nombre) => {
+    setProductoAEliminar({ codigo, nombre });
+    setMostrarConfirmacion(true);
+  };
+
+  const confirmarEliminacion = () => {
+    if (!productoAEliminar) return;
+
+    const result = eliminarProducto(productoAEliminar.codigo);
+    if (result.ok) {
+      setAlerta({ variant: 'success', message: result.message });
+      setTimeout(() => setAlerta(null), 3000);
+    } else {
+      setAlerta({ variant: 'danger', message: result.message });
+      setTimeout(() => setAlerta(null), 3000);
+    }
+    setMostrarConfirmacion(false);
+    setProductoAEliminar(null);
+  };
+
+  const handleSubmitFormulario = (producto) => {
+    let result;
+    
+    if (productoEditar) {
+      // EDITAR
+      result = editarProducto(productoEditar.codigo, producto);
+    } else {
+      // CREAR
+      result = crearProducto(producto);
+    }
+
+    if (result.ok) {
+      setMostrarFormulario(false);
+      setProductoEditar(null);
+      setAlerta({ variant: 'success', message: result.message });
+      setTimeout(() => setAlerta(null), 3000);
+    } else {
+      setAlerta({ variant: 'danger', message: result.message });
+      setTimeout(() => setAlerta(null), 3000);
+    }
+  };
+
+  const handleCerrarFormulario = () => {
+    setMostrarFormulario(false);
+    setProductoEditar(null);
   };
 
   return (
@@ -41,25 +114,35 @@ export default function PanelAdmin({ onLogout }) {
       <section className="p-4 shadow-sm mb-4 bg-white rounded-4">
         <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
           <div>
-            <h2 className="mb-1">Gestión de inventario</h2>
-            <p className="text-muted mb-0">Gestiona el stock disponible para cada producto.</p>
+            <h2 className="mb-1">Panel de Administración</h2>
+            <p className="text-muted mb-0">Gestiona el inventario completo de productos.</p>
           </div>
-          <Button variant="outline-danger" onClick={onLogout}>
-            Cerrar sesión
-          </Button>
         </div>
+
+        {alerta && (
+          <Alert variant={alerta.variant} className="mt-3 mb-0" dismissible onClose={() => setAlerta(null)}>
+            {alerta.message}
+          </Alert>
+        )}
+
         <Form className="row g-3 mt-4" onSubmit={event => event.preventDefault()}>
-          <Col lg={8}>
+          <Col lg={6}>
             <Form.Control
               type="text"
+              id="search-products"
               placeholder="Buscar por nombre o código"
               value={query}
               onChange={event => setQuery(event.target.value)}
             />
           </Col>
-          <Col lg={4} className="text-lg-end">
-            <Button variant="success" className="w-100 w-lg-auto" onClick={() => setQuery('')}>
+          <Col lg={3} className="text-lg-end">
+            <Button variant="outline-success" className="w-100 w-lg-auto" onClick={() => setQuery('')}>
               Limpiar búsqueda
+            </Button>
+          </Col>
+          <Col lg={3} className="text-lg-end">
+            <Button variant="success" className="w-100 w-lg-auto" onClick={handleCrearNuevo}>
+              + Crear nuevo producto
             </Button>
           </Col>
         </Form>
@@ -88,7 +171,7 @@ export default function PanelAdmin({ onLogout }) {
                         Unidad: <span className="fw-semibold">{product.unidadMedida}</span>
                       </Card.Text>
                       <Card.Text className="small text-muted mb-1">
-                        Precio: <span className="fw-semibold">${product.precio.toLocaleString('es-CL')}</span>
+                        Precio: <span className="fw-semibold">{formatearMoneda(product.precio)}</span>
                       </Card.Text>
                       <Card.Text className="small text-muted mb-0">
                         Stock actual: <span className="fw-semibold">{product.cantidad}</span>
@@ -101,17 +184,30 @@ export default function PanelAdmin({ onLogout }) {
                           type="number"
                           min="0"
                           value={draftValue}
-                          isInvalid={isInvalid}
                           onChange={event => handleDraftChange(product.codigo, event.target.value)}
                           placeholder="Ej. 25"
                         />
-                        <Form.Control.Feedback type="invalid">
-                          Ingresa un entero mayor o igual a 0.
-                        </Form.Control.Feedback>
+                        {isInvalid && (
+                          <div className="text-danger small mt-1">
+                            Ingresa un entero mayor o igual a 0.
+                          </div>
+                        )}
                       </Form.Group>
-                      <div className="d-grid">
+                      <div className="d-grid gap-2">
                         <Button type="submit" variant="success" disabled={isDisabled}>
                           Actualizar stock
+                        </Button>
+                        <Button 
+                          variant="outline-success" 
+                          onClick={() => handleEditarProducto(product)}
+                        >
+                          Editar producto
+                        </Button>
+                        <Button 
+                          variant="outline-danger" 
+                          onClick={() => handleEliminarProducto(product.codigo, product.nombre)}
+                        >
+                          Eliminar producto
                         </Button>
                       </div>
                     </Form>
@@ -129,10 +225,29 @@ export default function PanelAdmin({ onLogout }) {
           )}
         </Row>
       </section>
+
+      {/* MODAL DE FORMULARIO PARA CREAR/EDITAR */}
+      <FormularioProducto
+        show={mostrarFormulario}
+        onClose={handleCerrarFormulario}
+        onSubmit={handleSubmitFormulario}
+        productoInicial={productoEditar}
+      />
+
+      {/* MODAL DE CONFIRMACIÓN PARA ELIMINAR */}
+      <AlertaConfirmacion
+        mostrar={mostrarConfirmacion}
+        alCerrar={() => setMostrarConfirmacion(false)}
+        alConfirmar={confirmarEliminacion}
+        titulo="Eliminar producto"
+        mensaje={`¿Estás seguro de que deseas eliminar el producto "${productoAEliminar?.nombre}"? Esta acción no se puede deshacer.`}
+        textoConfirmar="Eliminar"
+        textoCancelar="Cancelar"
+        variante="danger"
+      />
     </Container>
   );
 }
 
 PanelAdmin.propTypes = {
-  onLogout: PropTypes.func.isRequired
 };

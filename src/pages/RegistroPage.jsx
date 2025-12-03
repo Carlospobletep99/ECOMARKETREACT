@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Button, Col, Container, Form, Row } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -8,7 +8,12 @@ export default function RegistroPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ nombre: '', email: '', tel: '', pass: '', pass2: '' });
-  const [status, setStatus] = useState(null);
+  const [alerta, setAlerta] = useState(null);
+
+  // TÍTULO DINÁMICO DE LA PÁGINA
+  useEffect(() => {
+    document.title = 'Crear Cuenta - Ecomarket';
+  }, []);
 
   // SINCRONIZA INPUTS CON EL ESTADO
   const handleChange = event => {
@@ -20,7 +25,7 @@ export default function RegistroPage() {
   const handleSubmit = event => {
     event.preventDefault();
     const result = register(form);
-    setStatus({ variant: result.ok ? 'success' : 'danger', message: result.message });
+    setAlerta({ variant: result.ok ? 'success' : 'danger', message: result.message });
     if (result.ok) {
       setTimeout(() => navigate('/perfil'), 800);
     }
@@ -44,6 +49,7 @@ export default function RegistroPage() {
                   value={form.nombre}
                   onChange={handleChange}
                   autoComplete="name"
+                  required
                 />
               </Col>
               <Col md={6}>
@@ -56,6 +62,7 @@ export default function RegistroPage() {
                   value={form.email}
                   onChange={handleChange}
                   autoComplete="email"
+                  required
                 />
               </Col>
               <Col md={6}>
@@ -68,6 +75,7 @@ export default function RegistroPage() {
                   value={form.tel}
                   onChange={handleChange}
                   autoComplete="tel"
+                  required
                 />
               </Col>
               <Col md={6}>
@@ -80,6 +88,7 @@ export default function RegistroPage() {
                   value={form.pass}
                   onChange={handleChange}
                   autoComplete="new-password"
+                  required
                 />
               </Col>
               <Col md={6}>
@@ -92,6 +101,7 @@ export default function RegistroPage() {
                   value={form.pass2}
                   onChange={handleChange}
                   autoComplete="new-password"
+                  required
                 />
               </Col>
               <Col xs={12} className="mt-3">
@@ -99,10 +109,10 @@ export default function RegistroPage() {
                   Registrarme
                 </Button>
               </Col>
-              {status && (
+              {alerta && (
                 <Col xs={12}>
-                  <Alert variant={status.variant} className="mb-0">
-                    {status.message}
+                  <Alert variant={alerta.variant} className="mb-0">
+                    {alerta.message}
                   </Alert>
                 </Col>
               )}
