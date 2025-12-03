@@ -22,10 +22,14 @@ export default function LoginPage() {
   };
 
   // INTENTA INICIAR SESIÓN Y REDIRIGE AL PERFIL
-  const handleSubmit = event => {
+  const handleSubmit = async (event) => { // <--- AGREGADO ASYNC
     event.preventDefault();
-    const result = login(form);
+    
+    // AGREGADO AWAIT: Esperamos a que el backend responda
+    const result = await login(form);
+    
     setAlerta({ variant: result.ok ? 'success' : 'danger', message: result.message });
+    
     if (result.ok) {
       setTimeout(() => navigate('/perfil'), 800);
     }

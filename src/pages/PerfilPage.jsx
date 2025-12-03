@@ -6,79 +6,76 @@ import PanelAdmin from '../components/PanelAdmin.jsx';
 import AlertaConfirmacion from '../components/AlertaConfirmacion.jsx';
 
 export default function PerfilPage() {
-  // CONTEXTO DE AUTENTICACIÓN Y ESTADO LOCAL
-  const { user, users, updateProfile, eliminarCuenta } = useAuth();
+  // Importamos 'login' para validar la contraseña al guardar
+  const { user, login, updateProfile, eliminarCuenta } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ nombre: '', email: '', tel: '' });
   const [alerta, setAlerta] = useState(null);
   
-  // ESTADO PARA CONFIRMACIONES CON CONTRASEÑA
   const [mostrarAlertaPassword, setMostrarAlertaPassword] = useState(false);
   const [accionPendiente, setAccionPendiente] = useState(null); // 'guardar' o 'eliminar'
   const [passwordConfirmacion, setPasswordConfirmacion] = useState('');
   const [modalError, setModalError] = useState('');
 
-  // SINCRONIZA EL FORMULARIO CON LOS DATOS DEL USUARIO
   useEffect(() => {
     if (user) {
-      setForm({ nombre: user.nombre ?? '', email: user.email ?? '', tel: user.tel ?? '' });
+      setForm({ 
+        nombre: user.nombre ?? '', 
+        email: user.email ?? '', 
+        tel: user.tel ?? user.telefono ?? '' // Soporte para 'tel' o 'telefono'
+      });
     }
   }, [user]);
 
-  // TÍTULO DINÁMICO DE LA PÁGINA
   useEffect(() => {
     document.title = user?.isAdmin ? 'Panel de Administración - Ecomarket' : 'Mi Perfil - Ecomarket';
   }, [user]);
 
-  // MANEJA CAMBIOS EN LOS CAMPOS
   const handleChange = event => {
     const { name, value } = event.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // GUARDA LOS CAMBIOS DEL PERFIL
   const handleSave = event => {
     event.preventDefault();
-
-    // Validación de email
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       setAlerta({ variant: 'danger', message: 'El correo electrónico no es válido.' });
       return;
     }
-
-    // Validación de teléfono (mismo patrón que en Registro)
     if (form.tel.trim() && !/^\+?\d+$/.test(form.tel.trim())) {
       setAlerta({ variant: 'danger', message: 'El número telefónico no es válido.' });
       return;
     }
-
-    // Solicitar contraseña antes de guardar
     setAccionPendiente('guardar');
     setMostrarAlertaPassword(true);
   };
 
-  // MANEJA LA CONFIRMACIÓN CON CONTRASEÑA (GUARDAR O ELIMINAR)
-  const handleConfirmarPassword = () => {
-    if (!passwordConfirmacion.trim()) {
+  // AQUÍ ESTÁ LA CORRECCIÓN PRINCIPAL (ASYNC/AWAIT)
+  const handleConfirmarPassword = async () => {
+    if (!passwordConfirmacion) {
       setModalError('Debes ingresar tu contraseña.');
       return;
     }
 
-    // Buscar el usuario completo en el array para verificar la contraseña
-    const usuarioCompleto = users.find(u => u.email === user.email);
-    if (!usuarioCompleto || usuarioCompleto.pass !== passwordConfirmacion.trim()) {
+    // 1. Verificamos la contraseña haciendo un login silencioso
+    const validacion = await login({ email: user.email, pass: passwordConfirmacion });
+
+    if (!validacion.ok) {
       setModalError('La contraseña es incorrecta.');
       return;
     }
 
+    // 2. Si la contraseña es correcta, procedemos (esperando la respuesta con AWAIT)
     if (accionPendiente === 'guardar') {
-      // Guardar cambios del perfil
-      const result = updateProfile({ nombre: form.nombre, email: form.email, tel: form.tel });
+      const result = await updateProfile({ nombre: form.nombre, email: form.email, tel: form.tel });
+      
+      // Ahora 'result' tiene los datos reales, no es una promesa
       setAlerta({ variant: result.ok ? 'success' : 'danger', message: result.message });
       cerrarModalPassword();
+
     } else if (accionPendiente === 'eliminar') {
-      // Eliminar cuenta
-      const result = eliminarCuenta(passwordConfirmacion);
+      const result = await eliminarCuenta();
+      
       if (result.ok) {
         cerrarModalPassword();
         navigate('/');
@@ -103,7 +100,6 @@ export default function PerfilPage() {
     <Container className="py-5">
       <Row className="justify-content-center">
         <Col md={7} lg={6}>
-          {/* FORMULARIO DE PERFIL PARA CLIENTES */}
           <section className="p-4 shadow-sm bg-white rounded-4">
             <h2 className="mb-4">Mi perfil</h2>
             <Form className="row g-3" onSubmit={handleSave}>
@@ -182,10 +178,10 @@ export default function PerfilPage() {
         titulo={accionPendiente === 'eliminar' ? 'Eliminar cuenta' : 'Confirmar cambios'}
         mensaje={
           accionPendiente === 'eliminar'
-            ? 'Para confirmar la eliminación de tu cuenta, por favor ingresa tu contraseña. Esta acción no se puede deshacer.'
+            ? 'Para confirmar la eliminación de tu cuenta, por favor ingresa tu contraseña. Esta acción cerrará tu sesión.'
             : 'Por seguridad, confirma tu contraseña para guardar los cambios en tu perfil.'
         }
-        textoConfirmar={accionPendiente === 'eliminar' ? 'Eliminar permanentemente' : 'Confirmar'}
+        textoConfirmar={accionPendiente === 'eliminar' ? 'Eliminar cuenta' : 'Confirmar'}
         textoCancelar="Cancelar"
         variante={accionPendiente === 'eliminar' ? 'danger' : 'success'}
       >

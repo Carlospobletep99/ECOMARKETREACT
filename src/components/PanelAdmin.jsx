@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import PropTypes from 'prop-types';
 import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
 import { useInventario } from '../context/InventarioContext.jsx';
 import { useCarrito } from '../context/CarritoContext.jsx';
@@ -38,6 +37,7 @@ export default function PanelAdmin() {
     setDraftStock(prev => ({ ...prev, [codigo]: value }));
   };
 
+  // Manejo de actualización de stock (local + contexto carrito)
   const handleSubmit = (event, codigo) => {
     event.preventDefault();
     const result = updateProductStock(codigo, draftStock[codigo]);
@@ -67,39 +67,45 @@ export default function PanelAdmin() {
     setMostrarConfirmacion(true);
   };
 
-  const confirmarEliminacion = () => {
+  // AQUÍ ESTÁ EL CAMBIO CLAVE: ASYNC / AWAIT
+  const confirmarEliminacion = async () => {
     if (!productoAEliminar) return;
 
-    const result = eliminarProducto(productoAEliminar.codigo);
+    // Esperamos a que el backend responda
+    const result = await eliminarProducto(productoAEliminar.codigo);
+    
+    // CORRECCIÓN: Usamos result.ok en vez de result.success
     if (result.ok) {
-      setAlerta({ variant: 'success', message: result.message });
+      setAlerta({ variant: 'success', message: 'Producto eliminado correctamente.' });
       setTimeout(() => setAlerta(null), 3000);
     } else {
-      setAlerta({ variant: 'danger', message: result.message });
+      setAlerta({ variant: 'danger', message: result.message || 'Error al eliminar' });
       setTimeout(() => setAlerta(null), 3000);
     }
     setMostrarConfirmacion(false);
     setProductoAEliminar(null);
   };
 
-  const handleSubmitFormulario = (producto) => {
+  // AQUÍ TAMBIÉN: ASYNC / AWAIT
+  const handleSubmitFormulario = async (producto) => {
     let result;
     
     if (productoEditar) {
       // EDITAR
-      result = editarProducto(productoEditar.codigo, producto);
+      result = await editarProducto(productoEditar.codigo, producto);
     } else {
       // CREAR
-      result = crearProducto(producto);
+      result = await crearProducto(producto);
     }
 
+    // CORRECCIÓN: Usamos result.ok para verificar el éxito
     if (result.ok) {
-      setMostrarFormulario(false);
+      setMostrarFormulario(false); // Cierra el formulario automáticamente
       setProductoEditar(null);
-      setAlerta({ variant: 'success', message: result.message });
+      setAlerta({ variant: 'success', message: result.message || 'Operación exitosa.' });
       setTimeout(() => setAlerta(null), 3000);
     } else {
-      setAlerta({ variant: 'danger', message: result.message });
+      setAlerta({ variant: 'danger', message: result.message || 'Ocurrió un error.' });
       setTimeout(() => setAlerta(null), 3000);
     }
   };
@@ -177,6 +183,7 @@ export default function PanelAdmin() {
                         Stock actual: <span className="fw-semibold">{product.cantidad}</span>
                       </Card.Text>
                     </div>
+                    {/* Formulario de actualización de stock (local) */}
                     <Form onSubmit={event => handleSubmit(event, product.codigo)} className="mt-auto">
                       <Form.Group className="mb-3">
                         <Form.Label>Nueva cantidad</Form.Label>
@@ -248,6 +255,3 @@ export default function PanelAdmin() {
     </Container>
   );
 }
-
-PanelAdmin.propTypes = {
-};

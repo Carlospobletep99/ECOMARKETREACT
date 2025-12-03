@@ -1,167 +1,196 @@
-import { createContext, useCallback, useContext, useMemo } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
-// CLAVES DE ALMACENAMIENTO PERSISTENTE:
-const USERS_KEY = 'usuarios';
+// CLAVE PARA PERSISTIR LA SESIÓN
 const ACTIVE_USER_KEY = 'usuarioActivo';
-
-// DATOS DEL ADMIN POR DEFECTO:
-const ADMIN_EMAIL = 'admin@gmail.com';
-const ADMIN_PASSWORD = 'admin123';
+// URL BASE DEL BACKEND
+const BASE_URL = 'http://localhost:8080/api/auth';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [users, setUsers] = useLocalStorage(USERS_KEY, []);
-  const [user, setUser] = useLocalStorage(ACTIVE_USER_KEY, null);
+ // Inicializamos el usuario leyendo del localStorage
+ const [user, setUserState] = useState(() => {
+   try {
+     const stored = window.localStorage.getItem(ACTIVE_USER_KEY);
+     return stored ? JSON.parse(stored) : null;
+   } catch (error) {
+     return null;
+   }
+ });
 
-  // REGISTRO DE USUARIOS:
-  const register = useCallback(({ nombre, email, tel, pass, pass2 }) => {
-    const trimmedEmail = email.trim().toLowerCase();
-    const errors = [];
+ // Helper para guardar en estado y en localStorage
+ const setUser = useCallback((userData) => {
+   setUserState(userData);
+   if (userData) {
+     window.localStorage.setItem(ACTIVE_USER_KEY, JSON.stringify(userData));
+   } else {
+     window.localStorage.removeItem(ACTIVE_USER_KEY);
+   }
+ }, []);
 
-    if (!nombre.trim() || !trimmedEmail || !tel.trim() || !pass.trim() || !pass2.trim()) {
-      errors.push('Por favor, completa todos los campos.');
-    }
-    if (pass !== pass2) {
-      errors.push('Las contraseñas no coinciden.');
-    }
-    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      errors.push('El correo electrónico no es válido.');
-    }
-    if (tel && !/^\+?\d+$/.test(tel.trim())) {
-      errors.push('El número telefónico no es válido.');
-    }
-    if (trimmedEmail === ADMIN_EMAIL) {
-      errors.push('Ese correo está reservado para el administrador.');
-    }
-    if (users.some(u => u.email === trimmedEmail)) {
-      errors.push('El correo ya está registrado.');
-    }
+ // REGISTRO DE USUARIOS
+ const register = useCallback(async ({ nombre, email, tel, pass, pass2 }) => {
+   if (!nombre || !email || !tel || !pass || !pass2) {
+     return { ok: false, message: 'Por favor, completa todos los campos.' };
+   }
+   if (pass !== pass2) {
+     return { ok: false, message: 'Las contraseñas no coinciden.' };
+   }
 
-    if (errors.length > 0) {
-      return { ok: false, message: errors[0] };
-    }
+   try {
+     const response = await fetch(`${BASE_URL}/registro`, {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ nombre, email, telefono: tel, password: pass })
+     });
 
-    const newUser = {
-      nombre: nombre.trim(),
-      email: trimmedEmail,
-      tel: tel.trim(),
-      pass: pass.trim(),
-      isAdmin: false
-    };
+     const data = await response.json();
 
-    setUsers(prev => [...prev, newUser]);
-    setUser({ nombre: newUser.nombre, email: newUser.email, tel: newUser.tel, isAdmin: false });
-    return { ok: true, message: 'Usuario registrado con éxito.' };
-  }, [setUser, setUsers, users]);
+     if (!response.ok) {
+       return { ok: false, message: data.message || 'Error al registrarse.' };
+     }
 
-  // INICIO DE SESION:
-  const login = useCallback(({ email, pass }) => {
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPass = pass.trim();
+     setUser({
+       nombre: data.nombre,
+       email: data.email,
+       tel: data.telefono,
+       isAdmin: data.esAdmin
+     });
 
-    if (!trimmedEmail || !trimmedPass) {
-      return { ok: false, message: 'Por favor, completa todos los campos.' };
-    }
+     return { ok: true, message: 'Usuario registrado con éxito.' };
 
-    if (trimmedEmail === ADMIN_EMAIL && trimmedPass === ADMIN_PASSWORD) {
-      const adminUser = {
-        nombre: 'Administrador',
-        email: ADMIN_EMAIL,
-        tel: '',
-        isAdmin: true
-      };
-      setUser(adminUser);
-      return { ok: true, message: 'Bienvenido, administrador.' };
-    }
+   } catch (error) {
+     console.error('Error en registro:', error);
+     return { ok: false, message: 'Error de conexión con el servidor.' };
+   }
+ }, [setUser]);
 
-    const found = users.find(u => u.email === trimmedEmail && u.pass === trimmedPass);
-    if (!found) {
-      return { ok: false, message: 'Correo o contraseña incorrectos.' };
-    }
+ // INICIO DE SESIÓN
+ const login = useCallback(async ({ email, pass }) => {
+   if (!email || !pass) {
+     return { ok: false, message: 'Por favor, completa todos los campos.' };
+   }
 
-    setUser({
-      nombre: found.nombre,
-      email: found.email,
-      tel: found.tel,
-      isAdmin: !!found.isAdmin
-    });
-    return { ok: true, message: 'Inicio de sesión exitoso.' };
-  }, [setUser, users]);
+   try {
+     const response = await fetch(`${BASE_URL}/login`, {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ email, pass })
+     });
 
-  // CIERRE DE SESION:
-  const logout = useCallback(() => {
-    setUser(null);
-  }, [setUser]);
+     const data = await response.json();
 
-  // EDICION DEL PERFIL:
-  const updateProfile = useCallback(({ nombre, email, tel }) => {
-    if (!user) {
-      return { ok: false, message: 'Debes iniciar sesión.' };
-    }
-    if (user.isAdmin) {
-      return { ok: false, message: 'El perfil de administrador no se puede editar desde aquí.' };
-    }
-    if (!nombre.trim()) {
-      return { ok: false, message: 'El nombre no puede estar vacío.' };
-    }
-    if (!tel || !tel.trim()) {
-      return { ok: false, message: 'El teléfono es obligatorio.' };
-    }
-    if (!/^\+?\d+$/.test(tel.trim())) {
-      return { ok: false, message: 'El número telefónico no es válido.' };
-    }
+     if (!response.ok) {
+       return { ok: false, message: data.message || 'Credenciales incorrectas.' };
+     }
 
-    // Si el email cambió, verificar que no esté en uso por otro usuario
-    if (email && email.trim().toLowerCase() !== user.email.toLowerCase()) {
-      const emailExiste = users.some(u => u.email.toLowerCase() === email.trim().toLowerCase() && u.email !== user.email);
-      if (emailExiste) {
-        return { ok: false, message: 'El correo electrónico ya está registrado.' };
-      }
-    }
+     setUser({
+       nombre: data.nombre,
+       email: data.email,
+       tel: data.telefono,
+       isAdmin: data.esAdmin
+     });
 
-    const nuevoEmail = email?.trim().toLowerCase() || user.email;
+     return { ok: true, message: 'Inicio de sesión exitoso.' };
 
-    setUsers(prev =>
-      prev.map(u => (u.email === user.email ? { ...u, nombre: nombre.trim(), email: nuevoEmail, tel: tel.trim() } : u))
-    );
-    const updatedUser = { ...user, nombre: nombre.trim(), email: nuevoEmail, tel: tel.trim() };
-    setUser(updatedUser);
-    return { ok: true, message: 'Perfil actualizado con éxito.' };
-  }, [setUser, setUsers, user, users]);
+   } catch (error) {
+     console.error('Error en login:', error);
+     return { ok: false, message: 'Error de conexión con el servidor.' };
+   }
+ }, [setUser]);
 
-  // ELIMINAR CUENTA:
-  const eliminarCuenta = useCallback((password) => {
-    if (!user) return { ok: false, message: 'No hay sesión activa.' };
-    
-    const currentUserRecord = users.find(u => u.email === user.email);
-    if (!currentUserRecord) return { ok: false, message: 'Usuario no encontrado.' };
+ // CIERRE DE SESIÓN
+ const logout = useCallback(() => {
+   setUser(null);
+ }, [setUser]);
 
-    if (currentUserRecord.pass !== password) {
-      return { ok: false, message: 'La contraseña es incorrecta.' };
-    }
+ // EDICIÓN DE PERFIL (CONECTADA AL BACKEND)
+ const updateProfile = useCallback(async ({ nombre, email, tel }) => {
+   if (!user) return { ok: false, message: 'No hay sesión activa.' };
+   
+   try {
+     // Endpoint PUT con el email como identificador
+     const response = await fetch(`${BASE_URL}/actualizar/${user.email}`, {
+       method: 'PUT',
+       headers: { 'Content-Type': 'application/json' },
+       // Mapeamos 'tel' a 'telefono' para el backend
+       body: JSON.stringify({ 
+         nombre: nombre, 
+         email: email, 
+         telefono: tel 
+       }) 
+     });
 
-    setUsers(prev => prev.filter(u => u.email !== user.email));
-    setUser(null);
-    return { ok: true, message: 'Cuenta eliminada correctamente.' };
-  }, [user, users, setUsers, setUser]);
+     const data = await response.json();
 
-  // DISPONIBLES PARA TODA LA APP:
-  const value = useMemo(
-    () => ({ users, user, register, login, logout, updateProfile, eliminarCuenta }),
-    [users, user, register, login, logout, updateProfile, eliminarCuenta]
-  );
+     if (!response.ok) {
+       return { ok: false, message: data.message || 'Error al actualizar.' };
+     }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+     // Actualizamos sesión local con los datos del backend
+     const updatedUser = { 
+       ...user, 
+       nombre: data.nombre, 
+       email: data.email, 
+       tel: data.telefono,
+       isAdmin: user.isAdmin 
+     };
+     
+     setUser(updatedUser);
+     
+     return { ok: true, message: 'Perfil actualizado correctamente en la base de datos.' };
+
+   } catch (error) {
+     console.error('Error al actualizar perfil:', error);
+     return { ok: false, message: 'Error de conexión.' };
+   }
+ }, [user, setUser]);
+
+ // ELIMINAR CUENTA (CONECTADA AL BACKEND)
+ const eliminarCuenta = useCallback(async () => {
+   if (!user) return { ok: false, message: 'No hay sesión activa.' };
+
+   try {
+     // Endpoint DELETE
+     const response = await fetch(`${BASE_URL}/eliminar/${user.email}`, {
+       method: 'DELETE',
+     });
+
+     if (!response.ok) {
+       return { ok: false, message: 'No se pudo eliminar la cuenta.' };
+     }
+
+     setUser(null);
+     return { ok: true, message: 'Cuenta eliminada permanentemente.' };
+
+   } catch (error) {
+     console.error('Error al eliminar cuenta:', error);
+     return { ok: false, message: 'Error de conexión.' };
+   }
+ }, [user, setUser]);
+
+ const value = useMemo(
+   () => ({ 
+     user, 
+     users: [], 
+     register, 
+     login, 
+     logout, 
+     updateProfile, 
+     eliminarCuenta 
+   }),
+   [user, register, login, logout, updateProfile, eliminarCuenta]
+ );
+
+ return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 AuthProvider.propTypes = {
-  children: PropTypes.node.isRequired
+ children: PropTypes.node.isRequired
 };
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  return context;
+ const context = useContext(AuthContext);
+ return context;
 }

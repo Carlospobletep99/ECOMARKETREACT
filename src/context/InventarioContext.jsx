@@ -1,83 +1,145 @@
-import { createContext, useCallback, useContext, useMemo } from 'react';
+import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { useLocalStorage } from '../hooks/useLocalStorage.js';
-import { products as initialProducts } from '../data/products.js';
 
-// CLAVE DEL INVENTARIO ALMACENADO EN LOCALSTORAGE:
-const PRODUCTS_KEY = 'productosInventario';
+export const InventarioContext = createContext();
 
-const InventarioContext = createContext(null);
+// URL BASE DEL BACKEND (Asegúrate de que tu Spring Boot esté corriendo en el puerto 8080)
+const BASE_URL = 'http://localhost:8080/api/productos';
 
 export function InventarioProvider({ children }) {
-  const [products, setProducts] = useLocalStorage(PRODUCTS_KEY, initialProducts);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // CREAR NUEVO PRODUCTO:
-  const crearProducto = useCallback((nuevoProducto) => {
-    // Validar que el código no exista
-    const codigoExiste = products.some(p => p.codigo === nuevoProducto.codigo);
-    if (codigoExiste) {
-      return { ok: false, message: 'Ya existe un producto con ese código.' };
-    }
-
-    // Agregar el nuevo producto
-    setProducts(prev => [...prev, nuevoProducto]);
-    return { ok: true, message: 'Producto creado exitosamente.' };
-  }, [products, setProducts]);
-
-  // EDITAR PRODUCTO EXISTENTE:
-  const editarProducto = useCallback((codigoOriginal, productoActualizado) => {
-    // Validar que el producto exista
-    const productoExiste = products.some(p => p.codigo === codigoOriginal);
-    if (!productoExiste) {
-      return { ok: false, message: 'El producto no existe.' };
-    }
-
-    // Si cambió el código, verificar que el nuevo no esté en uso
-    if (codigoOriginal !== productoActualizado.codigo) {
-      const codigoEnUso = products.some(p => p.codigo === productoActualizado.codigo);
-      if (codigoEnUso) {
-        return { ok: false, message: 'El nuevo código ya está en uso por otro producto.' };
+  // 1. OBTENER PRODUCTOS (GET /api/productos)
+  // Esta función carga la lista real desde la base de datos
+  const obtenerProductos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(BASE_URL);
+      if (!response.ok) {
+        throw new Error(`Error al conectar con el servidor: ${response.status} ${response.statusText}`);
       }
+      const data = await response.json();
+      setProducts(data);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError('No se pudo cargar el inventario. Verifica que el backend esté corriendo.');
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
-    // Actualizar el producto
-    setProducts(prev => prev.map(p => 
-      p.codigo === codigoOriginal ? productoActualizado : p
-    ));
-    return { ok: true, message: 'Producto actualizado exitosamente.' };
-  }, [products, setProducts]);
+  // Carga inicial automática al abrir la página
+  useEffect(() => {
+    obtenerProductos();
+  }, [obtenerProductos]);
 
-  // ELIMINAR PRODUCTO:
-  const eliminarProducto = useCallback((codigo) => {
-    const productoExiste = products.some(p => p.codigo === codigo);
-    if (!productoExiste) {
-      return { ok: false, message: 'El producto no existe.' };
+  // 2. CREAR PRODUCTO (POST /api/productos)
+  const crearProducto = useCallback(async (productoNuevo) => {
+    try {
+      const response = await fetch(BASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productoNuevo),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        // Si el backend envía un mensaje de error específico (ej: "El código ya existe"), lo usamos
+        throw new Error(errorData.message || 'Error al crear el producto.');
+      }
+
+      // Recargamos la lista para ver el nuevo producto inmediatamente
+      await obtenerProductos();
+      return { ok: true, message: 'Producto creado exitosamente.' };
+
+    } catch (err) {
+      console.error('Error creando producto:', err);
+      return { ok: false, message: err.message };
     }
+  }, [obtenerProductos]);
 
-    setProducts(prev => prev.filter(p => p.codigo !== codigo));
-    return { ok: true, message: 'Producto eliminado exitosamente.' };
-  }, [products, setProducts]);
+  // 3. EDITAR PRODUCTO (PUT /api/productos/{codigo})
+  const editarProducto = useCallback(async (codigo, productoActualizado) => {
+    try {
+      const response = await fetch(`${BASE_URL}/${codigo}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productoActualizado),
+      });
 
-  // COMPARTIMOS CATALOGO Y FUNCIONES CRUD:
-  const value = useMemo(
-    () => ({ 
-      products, 
-      setProducts,
-      crearProducto,
-      editarProducto,
-      eliminarProducto
-    }),
-    [products, setProducts, crearProducto, editarProducto, eliminarProducto]
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al editar el producto.');
+      }
+
+      await obtenerProductos();
+      return { ok: true, message: 'Producto actualizado exitosamente.' };
+
+    } catch (err) {
+      console.error('Error editando producto:', err);
+      return { ok: false, message: err.message };
+    }
+  }, [obtenerProductos]);
+
+  // 4. ELIMINAR PRODUCTO (DELETE /api/productos/{codigo})
+  const eliminarProducto = useCallback(async (codigo) => {
+    try {
+      const response = await fetch(`${BASE_URL}/${codigo}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al eliminar el producto.');
+      }
+
+      await obtenerProductos();
+      return { ok: true, message: 'Producto eliminado exitosamente.' };
+
+    } catch (err) {
+      console.error('Error eliminando producto:', err);
+      return { ok: false, message: err.message };
+    }
+  }, [obtenerProductos]);
+
+  // Empaquetamos todo para que el resto de la app lo use
+  const value = useMemo(() => ({
+    products,       // La lista de productos (Estado)
+    setProducts,    // Por si necesitas manipular localmente (aunque obtenerProductos es mejor)
+    loading,        // Para mostrar un spinner si quieres
+    error,          // Para mostrar mensajes de error si falla la conexión
+    obtenerProductos,
+    crearProducto,
+    editarProducto,
+    eliminarProducto
+  }), [products, loading, error, obtenerProductos, crearProducto, editarProducto, eliminarProducto]);
+
+  return (
+    <InventarioContext.Provider value={value}>
+      {children}
+    </InventarioContext.Provider>
   );
-
-  return <InventarioContext.Provider value={value}>{children}</InventarioContext.Provider>;
 }
 
 InventarioProvider.propTypes = {
   children: PropTypes.node.isRequired
 };
 
+// Hook personalizado para usar el contexto fácilmente
 export function useInventario() {
   const context = useContext(InventarioContext);
+  if (!context) {
+    throw new Error('useInventario debe usarse dentro de un InventarioProvider');
+  }
   return context;
 }
+
+// Importación necesaria para el hook useInventario
+import { useContext } from 'react';

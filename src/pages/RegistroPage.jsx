@@ -22,10 +22,14 @@ export default function RegistroPage() {
   };
 
   // REALIZA EL REGISTRO Y REDIRIGE AL PERFIL
-  const handleSubmit = event => {
+  const handleSubmit = async (event) => { // <--- AGREGADO ASYNC
     event.preventDefault();
-    const result = register(form);
+    
+    // AGREGADO AWAIT: Esperamos a que el backend cree el usuario
+    const result = await register(form);
+    
     setAlerta({ variant: result.ok ? 'success' : 'danger', message: result.message });
+    
     if (result.ok) {
       setTimeout(() => navigate('/perfil'), 800);
     }
