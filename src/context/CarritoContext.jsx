@@ -11,45 +11,40 @@ const CarritoContext = createContext(null);
 export function CarritoProvider({ children }) {
   const [cart, setCart] = useLocalStorage(CART_KEY, []);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const { products, setProducts } = useInventario();
+  
+  // Extraemos editarProducto para poder actualizar la BD al comprar
+  const { products, setProducts, editarProducto } = useInventario();
 
   // SINCRONIZAR CARRITO CUANDO CAMBIA EL INVENTARIO:
-  // Elimina productos que ya no existen o ajusta cantidades que exceden el stock
   useEffect(() => {
     setCart(prevCart => {
       return prevCart
         .map(item => {
           const producto = products.find(p => p.codigo === item.codigo);
           
-          // Si el producto fue eliminado del inventario, eliminarlo del carrito
           if (!producto) {
             return null;
           }
 
-          // Si la cantidad en el carrito excede el stock disponible, ajustarla
           let nuevaCantidad = item.cantidad;
           if (item.cantidad > producto.cantidad) {
             nuevaCantidad = producto.cantidad;
           }
 
-          // Si no hay stock (0), eliminar del carrito
           if (producto.cantidad === 0 || nuevaCantidad === 0) {
             return null;
           }
 
-          // IMPORTANTE: Actualizamos TODOS los datos del producto (precio, nombre, imagen)
-          // Esto asegura que si el admin cambia el precio, se actualice en el carrito del usuario
           return { 
-            ...producto, // Copiamos los datos frescos del inventario
-            cantidad: nuevaCantidad // Mantenemos la cantidad ajustada
+            ...producto, 
+            cantidad: nuevaCantidad 
           };
         })
-        .filter(Boolean); // Elimina items null
+        .filter(Boolean);
     });
   }, [products, setCart]);
 
   // OPERACIONES SOBRE EL CARRITO:
-  // Agrega una unidad y abre el carrito cuando la acción es válida.
   const addToCart = useCallback(
     product => {
       const catalogProduct = products.find(item => item.codigo === product.codigo);
@@ -90,7 +85,6 @@ export function CarritoProvider({ children }) {
     [products, setCart, setIsCartOpen]
   );
 
-  // Elimina completamente un producto del carrito.
   const removeFromCart = useCallback(
     codigo => {
       setCart(prev => prev.filter(item => item.codigo !== codigo));
@@ -98,7 +92,6 @@ export function CarritoProvider({ children }) {
     [setCart]
   );
 
-  // Suma una unidad a un ítem sin superar el stock.
   const incrementQuantity = useCallback(
     codigo => {
       const catalogProduct = products.find(item => item.codigo === codigo);
@@ -121,7 +114,6 @@ export function CarritoProvider({ children }) {
     [products, setCart]
   );
 
-  // Resta una unidad a un ítem sin bajar de 1.
   const decrementQuantity = useCallback(
     codigo => {
       setCart(prev =>
@@ -135,12 +127,10 @@ export function CarritoProvider({ children }) {
     [setCart]
   );
 
-  // Actualiza la cantidad de un ítem a un valor específico.
   const updateCartQuantity = useCallback(
     (codigo, cantidad) => {
       const parsedCantidad = Number(cantidad);
       if (!Number.isInteger(parsedCantidad) || parsedCantidad < 0) {
-        // No hacer nada si no es un entero válido o es negativo
         return;
       }
 
@@ -149,7 +139,6 @@ export function CarritoProvider({ children }) {
 
       setCart(prev => {
         if (parsedCantidad === 0) {
-          // Si la cantidad es 0, eliminar el producto del carrito
           return prev.filter(item => item.codigo !== codigo);
         }
 
@@ -157,8 +146,6 @@ export function CarritoProvider({ children }) {
           if (item.codigo !== codigo) {
             return item;
           }
-
-          // Limitar la cantidad al stock disponible
           const nextCantidad = Math.min(parsedCantidad, availableStock);
           return { ...item, cantidad: nextCantidad };
         });
@@ -170,7 +157,6 @@ export function CarritoProvider({ children }) {
   const openCart = useCallback(() => setIsCartOpen(true), []);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
 
-  // CÁLCULOS DERIVADOS:
   const cartTotal = useMemo(
     () => cart.reduce((acc, item) => acc + item.precio * item.cantidad, 0),
     [cart]
@@ -181,36 +167,53 @@ export function CarritoProvider({ children }) {
     [cart]
   );
 
-  // FINALIZACION Y STOCK: 
-  // Descuenta stock y vacía el carrito al confirmar el pedido.
-  const finalizeOrder = useCallback(() => {
+  // --- AQUÍ ESTÁ LA CORRECCIÓN IMPORTANTE ---
+  // Ahora es ASYNC y llama al backend para descontar stock real
+  const finalizeOrder = useCallback(async () => {
     if (cart.length === 0) {
       return { ok: false, message: 'Tu carrito está vacío.' };
     }
 
-    const quantities = new Map(cart.map(item => [item.codigo, item.cantidad]));
+    try {
+      // Creamos un array de promesas para actualizar cada producto en el backend
+      const promesasDeActualizacion = cart.map(item => {
+        const productoEnInventario = products.find(p => p.codigo === item.codigo);
+        
+        // Si por alguna razón el producto no está, lo saltamos (aunque no debería pasar)
+        if (!productoEnInventario) return Promise.resolve();
 
-    setProducts(prev =>
-      prev.map(product => {
-        const quantity = quantities.get(product.codigo);
-        if (!quantity) {
-          return product;
-        }
-        const nextCantidad = Math.max(0, product.cantidad - quantity);
-        if (nextCantidad === product.cantidad) {
-          return product;
-        }
-        return { ...product, cantidad: nextCantidad };
-      })
-    );
+        // Calculamos el nuevo stock restando lo que lleva en el carrito
+        const nuevoStock = Math.max(0, productoEnInventario.cantidad - item.cantidad);
 
-    setCart([]);
-    setIsCartOpen(false);
+        // Preparamos el objeto producto completo para enviarlo al PUT del backend
+        const productoActualizado = {
+          ...productoEnInventario,
+          cantidad: nuevoStock
+        };
 
-    return { ok: true };
-  }, [cart, setCart, setIsCartOpen, setProducts]);
+        // Llamamos a la API (usando la función que ya tenías en InventarioContext)
+        return editarProducto(item.codigo, productoActualizado);
+      });
 
-  // Actualiza el stock desde el panel y sincroniza el carrito.
+      // Esperamos a que todas las actualizaciones se completen en la base de datos
+      await Promise.all(promesasDeActualizacion);
+
+      // Si todo salió bien, vaciamos el carrito y cerramos
+      setCart([]);
+      setIsCartOpen(false);
+
+      return { ok: true, message: 'Pedido confirmado y stock actualizado.' };
+
+    } catch (error) {
+      console.error("Error al finalizar compra:", error);
+      return { ok: false, message: 'Hubo un error al procesar el pedido en el servidor.' };
+    }
+  }, [cart, products, setCart, setIsCartOpen, editarProducto]);
+
+  // Actualiza el stock localmente (usado por el panel admin para input rápido)
+  // OJO: Para que el "Actualizar stock" del panel admin TAMBIÉN guarde en BD,
+  // deberías usar editarProducto allá, pero por ahora mantenemos tu lógica local para ese componente
+  // y nos enfocamos en que la COMPRA sí descuente stock real.
   const updateProductStock = useCallback(
     (codigo, value) => {
       const parsed = Number(value);
@@ -261,7 +264,7 @@ export function CarritoProvider({ children }) {
         );
       }
 
-      const baseMessage = `Stock de ${product.nombre} actualizado a ${parsed} unidades.`;
+      const baseMessage = `Stock de ${product.nombre} actualizado a ${parsed} unidades (Local).`;
       if (!willAffectCart) {
         return { ok: true, message: baseMessage };
       }
@@ -276,7 +279,6 @@ export function CarritoProvider({ children }) {
     [cart, products, setCart, setProducts]
   );
 
-  // VALORES EXPUESTOS:
   const value = useMemo(
     () => ({
       cart,

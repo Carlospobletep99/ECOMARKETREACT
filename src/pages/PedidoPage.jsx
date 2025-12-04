@@ -38,7 +38,7 @@ export default function PedidoPage() {
   };
 
   // VALIDA LOS DATOS Y FINALIZA EL PEDIDO
-  const handleSubmit = event => {
+  const handleSubmit = async (event) => { // <--- AHORA ES ASYNC
     event.preventDefault();
     if (cart.length === 0) {
       setAlerta({ variant: 'danger', message: 'Tu carrito está vacío. Agrega productos antes de confirmar.' });
@@ -55,19 +55,21 @@ export default function PedidoPage() {
         setAlerta({ variant: 'danger', message: 'Por favor, completa tus datos de contacto (email y teléfono).' });
         return;
       }
-      // Validación de formato de email (misma regex que en otros formularios)
+      // Validación de formato de email
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
         setAlerta({ variant: 'danger', message: 'Por favor, ingresa un correo electrónico válido.' });
         return;
       }
-      // Validación de teléfono (mismo patrón que en Registro)
+      // Validación de teléfono
       if (!/^\+?\d+$/.test(form.tel.trim())) {
         setAlerta({ variant: 'danger', message: 'El número telefónico no es válido.' });
         return;
       }
     }
 
-    const result = finalizeOrder();
+    // <--- CORRECCIÓN PRINCIPAL: ESPERAMOS LA RESPUESTA DEL BACKEND --->
+    const result = await finalizeOrder();
+    
     if (!result.ok) {
       setAlerta({ variant: 'danger', message: result.message ?? 'No pudimos confirmar tu pedido.' });
       return;

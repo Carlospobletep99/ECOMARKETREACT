@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
 import { useInventario } from '../context/InventarioContext.jsx';
-import { useCarrito } from '../context/CarritoContext.jsx';
+// Ya no necesitamos useCarrito para actualizar stock, porque editarProducto actualizará
+// la base de datos y el inventario, y el carrito se sincronizará solo.
 import FormularioProducto from './FormularioProducto.jsx';
 import AlertaConfirmacion from './AlertaConfirmacion.jsx';
 import { formatearMoneda } from '../utils/formatearMoneda.js';
 
 export default function PanelAdmin() {
+  // Extraemos los productos y la función editarProducto que sí conecta a la API
   const { products, crearProducto, editarProducto, eliminarProducto } = useInventario();
-  const { updateProductStock } = useCarrito();
+  
   const [query, setQuery] = useState('');
   const [draftStock, setDraftStock] = useState({});
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -37,16 +39,39 @@ export default function PanelAdmin() {
     setDraftStock(prev => ({ ...prev, [codigo]: value }));
   };
 
-  // Manejo de actualización de stock (local + contexto carrito)
-  const handleSubmit = (event, codigo) => {
+  // --- CORRECCIÓN AQUÍ ---
+  // Ahora usamos editarProducto para que el cambio vaya a la Base de Datos
+  const handleSubmit = async (event, codigo) => {
     event.preventDefault();
-    const result = updateProductStock(codigo, draftStock[codigo]);
+    
+    // 1. Obtenemos el valor del input
+    const nuevoStock = Number(draftStock[codigo]);
+
+    // 2. Validaciones básicas
+    if (isNaN(nuevoStock) || nuevoStock < 0 || !Number.isInteger(nuevoStock)) {
+      setAlerta({ variant: 'danger', message: 'Por favor ingresa un número entero positivo.' });
+      return;
+    }
+
+    // 3. Buscamos el producto original para no perder sus otros datos (nombre, precio, etc.)
+    const productoOriginal = products.find(p => p.codigo === codigo);
+    if (!productoOriginal) return;
+
+    // 4. Preparamos el objeto con el stock actualizado
+    const productoActualizado = {
+      ...productoOriginal,
+      cantidad: nuevoStock
+    };
+
+    // 5. Enviamos al Backend (PUT)
+    const result = await editarProducto(codigo, productoActualizado);
+
     if (result.ok) {
-      setDraftStock(prev => ({ ...prev, [codigo]: '' }));
-      setAlerta({ variant: 'success', message: 'Stock actualizado correctamente.' });
+      setDraftStock(prev => ({ ...prev, [codigo]: '' })); // Limpiamos el input
+      setAlerta({ variant: 'success', message: 'Stock actualizado correctamente en la base de datos.' });
       setTimeout(() => setAlerta(null), 3000);
     } else {
-      setAlerta({ variant: 'danger', message: result.message });
+      setAlerta({ variant: 'danger', message: result.message || 'Error al actualizar.' });
       setTimeout(() => setAlerta(null), 3000);
     }
   };
@@ -67,14 +92,11 @@ export default function PanelAdmin() {
     setMostrarConfirmacion(true);
   };
 
-  // AQUÍ ESTÁ EL CAMBIO CLAVE: ASYNC / AWAIT
   const confirmarEliminacion = async () => {
     if (!productoAEliminar) return;
 
-    // Esperamos a que el backend responda
     const result = await eliminarProducto(productoAEliminar.codigo);
     
-    // CORRECCIÓN: Usamos result.ok en vez de result.success
     if (result.ok) {
       setAlerta({ variant: 'success', message: 'Producto eliminado correctamente.' });
       setTimeout(() => setAlerta(null), 3000);
@@ -86,21 +108,17 @@ export default function PanelAdmin() {
     setProductoAEliminar(null);
   };
 
-  // AQUÍ TAMBIÉN: ASYNC / AWAIT
   const handleSubmitFormulario = async (producto) => {
     let result;
     
     if (productoEditar) {
-      // EDITAR
       result = await editarProducto(productoEditar.codigo, producto);
     } else {
-      // CREAR
       result = await crearProducto(producto);
     }
 
-    // CORRECCIÓN: Usamos result.ok para verificar el éxito
     if (result.ok) {
-      setMostrarFormulario(false); // Cierra el formulario automáticamente
+      setMostrarFormulario(false);
       setProductoEditar(null);
       setAlerta({ variant: 'success', message: result.message || 'Operación exitosa.' });
       setTimeout(() => setAlerta(null), 3000);
@@ -163,6 +181,7 @@ export default function PanelAdmin() {
             const isInteger = Number.isInteger(parsedDraft);
             const isNonNegative = parsedDraft >= 0;
             const isInvalid = hasValue && (!isInteger || !isNonNegative);
+            // Desactivamos si no hay valor, es inválido o es igual al que ya tiene la BD
             const isDisabled = !hasValue || isInvalid || parsedDraft === product.cantidad;
 
             return (
@@ -183,7 +202,7 @@ export default function PanelAdmin() {
                         Stock actual: <span className="fw-semibold">{product.cantidad}</span>
                       </Card.Text>
                     </div>
-                    {/* Formulario de actualización de stock (local) */}
+                    {/* Formulario de actualización de stock */}
                     <Form onSubmit={event => handleSubmit(event, product.codigo)} className="mt-auto">
                       <Form.Group className="mb-3">
                         <Form.Label>Nueva cantidad</Form.Label>
