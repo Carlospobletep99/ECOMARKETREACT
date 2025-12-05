@@ -12,7 +12,7 @@ export function CarritoProvider({ children }) {
   const [cart, setCart] = useLocalStorage(CART_KEY, []);
   const [isCartOpen, setIsCartOpen] = useState(false);
   
-  // Extraemos editarProducto para poder actualizar la BD al comprar
+  // FUNCIONES DE INVENTARIO
   const { products, setProducts, editarProducto } = useInventario();
 
   // SINCRONIZAR CARRITO CUANDO CAMBIA EL INVENTARIO:
@@ -167,35 +167,29 @@ export function CarritoProvider({ children }) {
     [cart]
   );
 
-  // --- AQUÍ ESTÁ LA CORRECCIÓN IMPORTANTE ---
-  // Ahora es ASYNC y llama al backend para descontar stock real
+  // FINALIZAR PEDIDO Y ACTUALIZAR STOCK EN BD
   const finalizeOrder = useCallback(async () => {
     if (cart.length === 0) {
       return { ok: false, message: 'Tu carrito está vacío.' };
     }
 
     try {
-      // Creamos un array de promesas para actualizar cada producto en el backend
+      // ACTUALIZAR STOCK DE TODOS LOS PRODUCTOS EN BD
       const promesasDeActualizacion = cart.map(item => {
         const productoEnInventario = products.find(p => p.codigo === item.codigo);
         
-        // Si por alguna razón el producto no está, lo saltamos (aunque no debería pasar)
         if (!productoEnInventario) return Promise.resolve();
 
-        // Calculamos el nuevo stock restando lo que lleva en el carrito
         const nuevoStock = Math.max(0, productoEnInventario.cantidad - item.cantidad);
 
-        // Preparamos el objeto producto completo para enviarlo al PUT del backend
         const productoActualizado = {
           ...productoEnInventario,
           cantidad: nuevoStock
         };
 
-        // Llamamos a la API (usando la función que ya tenías en InventarioContext)
         return editarProducto(item.codigo, productoActualizado);
       });
 
-      // Esperamos a que todas las actualizaciones se completen en la base de datos
       await Promise.all(promesasDeActualizacion);
 
       // Si todo salió bien, vaciamos el carrito y cerramos
@@ -210,10 +204,7 @@ export function CarritoProvider({ children }) {
     }
   }, [cart, products, setCart, setIsCartOpen, editarProducto]);
 
-  // Actualiza el stock localmente (usado por el panel admin para input rápido)
-  // OJO: Para que el "Actualizar stock" del panel admin TAMBIÉN guarde en BD,
-  // deberías usar editarProducto allá, pero por ahora mantenemos tu lógica local para ese componente
-  // y nos enfocamos en que la COMPRA sí descuente stock real.
+  // ACTUALIZAR STOCK LOCAL
   const updateProductStock = useCallback(
     (codigo, value) => {
       const parsed = Number(value);

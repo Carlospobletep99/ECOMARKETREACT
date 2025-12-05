@@ -5,13 +5,13 @@ import { useCarrito } from '../context/CarritoContext.jsx';
 import { formatearMoneda } from '../utils/formatearMoneda.js';
 
 export default function CatalogoPage() {
-  // CONTEXTO Y ESTADOS LOCALES
+  // CONTEXTOS Y ESTADOS
   const { products } = useInventario();
   const { addToCart } = useCarrito();
   const [query, setQuery] = useState('');
   const [alerta, setAlerta] = useState(null);
 
-  // FILTRA PRODUCTOS SEGÚN BÚSQUEDA
+  // FILTRAR PRODUCTOS
   const filteredProducts = useMemo(() => {
     const source = Array.isArray(products) ? products : [];
     const sanitizedQuery = query.trim().replace(/[<>"'%;()&+]/g, '').toLowerCase();
@@ -33,7 +33,7 @@ export default function CatalogoPage() {
     document.title = 'Catálogo - Ecomarket';
   }, []);
 
-  // AGREGA PRODUCTO Y MUESTRA ALERTA SI NO HAY STOCK
+  // AGREGAR AL CARRITO
   const handleAddToCart = product => {
     const result = addToCart(product);
     if (!result.ok) {

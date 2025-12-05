@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function RegistroPage() {
-  // CONTEXTO Y ESTADOS DEL REGISTRO
+  // ESTADOS DEL FORM
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ nombre: '', email: '', tel: '', pass: '', pass2: '' });
@@ -15,17 +15,16 @@ export default function RegistroPage() {
     document.title = 'Crear Cuenta - Ecomarket';
   }, []);
 
-  // SINCRONIZA INPUTS CON EL ESTADO
+  // ACTUALIZAR CAMPOS
   const handleChange = event => {
     const { name, value } = event.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // REALIZA EL REGISTRO Y REDIRIGE AL PERFIL
-  const handleSubmit = async (event) => { // <--- AGREGADO ASYNC
+  // SUBMIT REGISTRO
+  const handleSubmit = async (event) => {
     event.preventDefault();
     
-    // AGREGADO AWAIT: Esperamos a que el backend cree el usuario
     const result = await register(form);
     
     setAlerta({ variant: result.ok ? 'success' : 'danger', message: result.message });

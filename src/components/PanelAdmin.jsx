@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
 import { useInventario } from '../context/InventarioContext.jsx';
-// Ya no necesitamos useCarrito para actualizar stock, porque editarProducto actualizará
-// la base de datos y el inventario, y el carrito se sincronizará solo.
+// EDITARPRODUCTO ACTUALIZA LA BD Y EL CARRITO SE SINCRONIZA AUTOMATICAMENTE
 import FormularioProducto from './FormularioProducto.jsx';
 import AlertaConfirmacion from './AlertaConfirmacion.jsx';
 import { formatearMoneda } from '../utils/formatearMoneda.js';
 
 export default function PanelAdmin() {
-  // Extraemos los productos y la función editarProducto que sí conecta a la API
+  // FUNCIONES DE INVENTARIO
   const { products, crearProducto, editarProducto, eliminarProducto } = useInventario();
   
   const [query, setQuery] = useState('');
@@ -39,35 +38,33 @@ export default function PanelAdmin() {
     setDraftStock(prev => ({ ...prev, [codigo]: value }));
   };
 
-  // --- CORRECCIÓN AQUÍ ---
-  // Ahora usamos editarProducto para que el cambio vaya a la Base de Datos
+  // ACTUALIZAR STOCK EN BD
   const handleSubmit = async (event, codigo) => {
     event.preventDefault();
     
-    // 1. Obtenemos el valor del input
     const nuevoStock = Number(draftStock[codigo]);
 
-    // 2. Validaciones básicas
+    // VALIDAR NUMERO ENTERO POSITIVO
     if (isNaN(nuevoStock) || nuevoStock < 0 || !Number.isInteger(nuevoStock)) {
       setAlerta({ variant: 'danger', message: 'Por favor ingresa un número entero positivo.' });
       return;
     }
 
-    // 3. Buscamos el producto original para no perder sus otros datos (nombre, precio, etc.)
+    // BUSCAR PRODUCTO ORIGINAL
     const productoOriginal = products.find(p => p.codigo === codigo);
     if (!productoOriginal) return;
 
-    // 4. Preparamos el objeto con el stock actualizado
+    // ACTUALIZAR SOLO LA CANTIDAD
     const productoActualizado = {
       ...productoOriginal,
       cantidad: nuevoStock
     };
 
-    // 5. Enviamos al Backend (PUT)
+    // GUARDAR EN BD
     const result = await editarProducto(codigo, productoActualizado);
 
     if (result.ok) {
-      setDraftStock(prev => ({ ...prev, [codigo]: '' })); // Limpiamos el input
+      setDraftStock(prev => ({ ...prev, [codigo]: '' }));
       setAlerta({ variant: 'success', message: 'Stock actualizado correctamente en la base de datos.' });
       setTimeout(() => setAlerta(null), 3000);
     } else {
@@ -76,7 +73,7 @@ export default function PanelAdmin() {
     }
   };
 
-  // MANEJADORES PARA CREAR/EDITAR/ELIMINAR
+  // HANDLERS CRUD
   const handleCrearNuevo = () => {
     setProductoEditar(null);
     setMostrarFormulario(true);

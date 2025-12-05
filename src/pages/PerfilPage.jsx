@@ -6,7 +6,7 @@ import PanelAdmin from '../components/PanelAdmin.jsx';
 import AlertaConfirmacion from '../components/AlertaConfirmacion.jsx';
 
 export default function PerfilPage() {
-  // Importamos 'login' para validar la contraseña al guardar
+  // CONTEXTOS
   const { user, login, updateProfile, eliminarCuenta } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ nombre: '', email: '', tel: '' });
@@ -22,7 +22,7 @@ export default function PerfilPage() {
       setForm({ 
         nombre: user.nombre ?? '', 
         email: user.email ?? '', 
-        tel: user.tel ?? user.telefono ?? '' // Soporte para 'tel' o 'telefono'
+        tel: user.tel ?? user.telefono ?? ''
       });
     }
   }, [user]);
@@ -50,14 +50,14 @@ export default function PerfilPage() {
     setMostrarAlertaPassword(true);
   };
 
-  // AQUÍ ESTÁ LA CORRECCIÓN PRINCIPAL (ASYNC/AWAIT)
+  // CONFIRMAR PASSWORD
   const handleConfirmarPassword = async () => {
     if (!passwordConfirmacion) {
       setModalError('Debes ingresar tu contraseña.');
       return;
     }
 
-    // 1. Verificamos la contraseña haciendo un login silencioso
+    // VALIDAR PASSWORD
     const validacion = await login({ email: user.email, pass: passwordConfirmacion });
 
     if (!validacion.ok) {
@@ -65,11 +65,10 @@ export default function PerfilPage() {
       return;
     }
 
-    // 2. Si la contraseña es correcta, procedemos (esperando la respuesta con AWAIT)
+    // EJECUTAR ACCION
     if (accionPendiente === 'guardar') {
       const result = await updateProfile({ nombre: form.nombre, email: form.email, tel: form.tel });
       
-      // Ahora 'result' tiene los datos reales, no es una promesa
       setAlerta({ variant: result.ok ? 'success' : 'danger', message: result.message });
       cerrarModalPassword();
 

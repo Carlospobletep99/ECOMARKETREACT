@@ -3,16 +3,15 @@ import PropTypes from 'prop-types';
 
 export const InventarioContext = createContext();
 
-// URL BASE DEL BACKEND (Asegúrate de que tu Spring Boot esté corriendo en el puerto 8080)
-const BASE_URL = 'http://localhost:8080/api/productos';
+// URL BASE DEL BACKEND
+const BASE_URL = 'http://98.95.199.158:8080/api/productos';
 
 export function InventarioProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 1. OBTENER PRODUCTOS (GET /api/productos)
-  // Esta función carga la lista real desde la base de datos
+  // OBTENER PRODUCTOS DESDE BD
   const obtenerProductos = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -31,12 +30,12 @@ export function InventarioProvider({ children }) {
     }
   }, []);
 
-  // Carga inicial automática al abrir la página
+  // CARGAR PRODUCTOS AL MONTAR
   useEffect(() => {
     obtenerProductos();
   }, [obtenerProductos]);
 
-  // 2. CREAR PRODUCTO (POST /api/productos)
+  // CREAR PRODUCTO EN BD
   const crearProducto = useCallback(async (productoNuevo) => {
     try {
       const response = await fetch(BASE_URL, {
@@ -49,11 +48,10 @@ export function InventarioProvider({ children }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        // Si el backend envía un mensaje de error específico (ej: "El código ya existe"), lo usamos
         throw new Error(errorData.message || 'Error al crear el producto.');
       }
 
-      // Recargamos la lista para ver el nuevo producto inmediatamente
+      // RECARGAR LISTA
       await obtenerProductos();
       return { ok: true, message: 'Producto creado exitosamente.' };
 
@@ -63,7 +61,7 @@ export function InventarioProvider({ children }) {
     }
   }, [obtenerProductos]);
 
-  // 3. EDITAR PRODUCTO (PUT /api/productos/{codigo})
+  // EDITAR PRODUCTO EN BD
   const editarProducto = useCallback(async (codigo, productoActualizado) => {
     try {
       const response = await fetch(`${BASE_URL}/${codigo}`, {
@@ -88,7 +86,7 @@ export function InventarioProvider({ children }) {
     }
   }, [obtenerProductos]);
 
-  // 4. ELIMINAR PRODUCTO (DELETE /api/productos/{codigo})
+  // ELIMINAR PRODUCTO EN BD
   const eliminarProducto = useCallback(async (codigo) => {
     try {
       const response = await fetch(`${BASE_URL}/${codigo}`, {
@@ -109,12 +107,12 @@ export function InventarioProvider({ children }) {
     }
   }, [obtenerProductos]);
 
-  // Empaquetamos todo para que el resto de la app lo use
+  // CONTEXTO VALUE
   const value = useMemo(() => ({
-    products,       // La lista de productos (Estado)
-    setProducts,    // Por si necesitas manipular localmente (aunque obtenerProductos es mejor)
-    loading,        // Para mostrar un spinner si quieres
-    error,          // Para mostrar mensajes de error si falla la conexión
+    products,
+    setProducts,
+    loading,
+    error,
     obtenerProductos,
     crearProducto,
     editarProducto,
@@ -132,7 +130,7 @@ InventarioProvider.propTypes = {
   children: PropTypes.node.isRequired
 };
 
-// Hook personalizado para usar el contexto fácilmente
+// HOOK PERSONALIZADO
 export function useInventario() {
   const context = useContext(InventarioContext);
   if (!context) {

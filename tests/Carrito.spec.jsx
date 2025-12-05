@@ -16,7 +16,7 @@ vi.mock('../src/context/InventarioContext.jsx', () => ({
 import { useCarrito } from '../src/context/CarritoContext.jsx';
 import { useInventario } from '../src/context/InventarioContext.jsx';
 
-// MATCHMEDIA FALSO PARA QUE ABRA EL CARRITO (OFFCANVAS):
+// MOCK MATCHMEDIA
 if (!globalThis.matchMedia) {
   globalThis.matchMedia = vi.fn().mockImplementation(query => ({
     matches: false,
@@ -30,7 +30,7 @@ if (!globalThis.matchMedia) {
   }));
 }
 
-// RENDERIZA EL COMPONENTE CON LOS VALORES MOCKEADOS:
+// RENDER CON MOCKS
 const renderCarrito = () =>
   render(
     <MemoryRouter>
@@ -39,12 +39,12 @@ const renderCarrito = () =>
   );
 
 describe('Carrito', () => {
-  // RESETEA LOS MOCKS ENTRE PRUEBAS:
+  // RESET MOCKS
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  // VERIFICA EL ESTADO VACÍO DEL CARRITO:
+  // TEST CARRITO VACIO
   it('Muestra mensaje "Vacío" cuando no hay productos', () => {
     useCarrito.mockReturnValue({
       cart: [],
@@ -62,7 +62,7 @@ describe('Carrito', () => {
     ).toBeInTheDocument();
   });
 
-  // VALIDA LAS ACCIONES CUANDO HAY PRODUCTOS EN EL CARRITO:
+  // TEST PRODUCTOS EN CARRITO
   it('Renderiza productos y permite ajustar cantidades', async () => {
     const incrementQuantity = vi.fn();
     const decrementQuantity = vi.fn();
@@ -101,15 +101,15 @@ describe('Carrito', () => {
 
     const user = userEvent.setup();
 
-  // SUBE LA CANTIDAD CUANDO TODAVIA QUEDA STOCK:
+    // TEST INCREMENTAR
     await user.click(screen.getByRole('button', { name: /sumar uno/i }));
     expect(incrementQuantity).toHaveBeenCalledWith('P01');
 
-  // ELIMINA EL PRODUCTO DEL CARRITO CON UN CLICK:
+    // TEST ELIMINAR
     await user.click(screen.getByRole('button', { name: /eliminar quinoa/i }));
     expect(removeFromCart).toHaveBeenCalledWith('P01');
 
-  // BOTON DE CONFIRMAR TAMBIEN CIERRA EL CARRITO:
+    // TEST CONFIRMAR
     await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
     expect(closeCart).toHaveBeenCalled();
   });

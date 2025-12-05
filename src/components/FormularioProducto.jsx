@@ -35,7 +35,7 @@ export default function FormularioProducto({ show, onClose, onSubmit, productoIn
         unidadMedida: productoInicial.unidadMedida || '',
         imagen: productoInicial.imagen || '',
         fechaVencimiento: productoInicial.fechaVencimiento || '',
-        // AQUÍ EL CAMBIO: Ya no leemos desde productoInicial.proveedor.x, sino directo
+        // MAPEO DE PROVEEDOR
         nombreProveedor: productoInicial.nombreProveedor || productoInicial.proveedor?.nombreProveedor || '',
         codigoProveedor: productoInicial.codigoProveedor?.toString() || productoInicial.proveedor?.codigoProveedor?.toString() || ''
       });
@@ -106,7 +106,7 @@ export default function FormularioProducto({ show, onClose, onSubmit, productoIn
       return;
     }
 
-    // AQUÍ EL CAMBIO: Construir el objeto PLANO para Java
+    // OBJETO PLANO PARA BACKEND
     const producto = {
       codigo: formData.codigo.trim(),
       nombre: formData.nombre.trim(),
@@ -117,7 +117,7 @@ export default function FormularioProducto({ show, onClose, onSubmit, productoIn
       unidadMedida: formData.unidadMedida.trim(),
       imagen: formData.imagen.trim(),
       fechaVencimiento: formData.fechaVencimiento,
-      // Se envían directo en la raíz del JSON
+      // DATOS DE PROVEEDOR
       nombreProveedor: formData.nombreProveedor.trim(),
       codigoProveedor: Number(formData.codigoProveedor)
     };
@@ -132,10 +132,6 @@ export default function FormularioProducto({ show, onClose, onSubmit, productoIn
       </Modal.Header>
       <Modal.Body>
         <Form onSubmit={handleSubmit}>
-          {/* ... (El resto del JSX se mantiene igual, son solo inputs visuales) ... */}
-          {/* Para ahorrar espacio no repito todo el JSX de los inputs ya que no cambiaron, 
-              solo la lógica de arriba. Asegúrate de mantener tu return completo aquí. 
-              Si lo necesitas completo dímelo. */}
           <Row className="g-3">
             <Col md={6}>
               <Form.Group>

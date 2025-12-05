@@ -22,16 +22,16 @@ export default function Carrito() {
   const [draftQuantities, setDraftQuantities] = useState({});
 
   const handleDraftChange = (codigo, value) => {
-    // Validar en tiempo real: solo permitir números enteros no negativos
+    // VALIDAR ENTEROS POSITIVOS
     const parsed = Number(value);
     
-    // Si el valor está vacío, permitirlo (el usuario está borrando)
+    // PERMITIR CAMPO VACIO
     if (value === '') {
       setDraftQuantities(prev => ({ ...prev, [codigo]: value }));
       return;
     }
     
-    // Si no es un número válido, no actualizar el estado
+    // RECHAZAR VALORES INVALIDOS
     if (isNaN(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
       return;
     }
@@ -41,18 +41,17 @@ export default function Carrito() {
 
   const handleDraftBlur = (codigo, cantidadActual) => {
     const draftValue = draftQuantities[codigo];
-    // Si el valor en el borrador no es un número válido o es igual a la cantidad actual, no hacemos nada.
+    // VALIDAR Y LIMPIAR SI NO HAY CAMBIOS
     if (draftValue === undefined || isNaN(Number(draftValue)) || Number(draftValue) === cantidadActual) {
-      // Limpiamos el valor del borrador para que el input vuelva a mostrar la cantidad real.
       setDraftQuantities(prev => {
         const next = { ...prev };
         delete next[codigo];
         return next;
       });
       return;
-    }
+    };
     updateCartQuantity(codigo, draftValue);
-    // Limpiamos el valor del borrador después de actualizar.
+    // LIMPIAR BORRADOR
     setDraftQuantities(prev => {
       const next = { ...prev };
       delete next[codigo];
@@ -78,7 +77,7 @@ export default function Carrito() {
                 const draftValue = draftQuantities[item.codigo];
                 const displayQuantity = draftValue !== undefined ? draftValue : item.cantidad;
                 
-                // Validar si el valor ingresado excede el stock disponible
+                // VALIDAR EXCESO DE STOCK
                 const draftExceedsStock = draftValue !== undefined && draftValue !== '' && Number(draftValue) > availableStock;
 
                 return (

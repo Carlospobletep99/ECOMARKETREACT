@@ -4,12 +4,12 @@ import PropTypes from 'prop-types';
 // CLAVE PARA PERSISTIR LA SESIÓN
 const ACTIVE_USER_KEY = 'usuarioActivo';
 // URL BASE DEL BACKEND
-const BASE_URL = 'http://localhost:8080/api/auth';
+const BASE_URL = 'http://98.95.199.158:8080/api/auth';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
- // Inicializamos el usuario leyendo del localStorage
+ // INICIALIZAR USUARIO DESDE LOCALSTORAGE
  const [user, setUserState] = useState(() => {
    try {
      const stored = window.localStorage.getItem(ACTIVE_USER_KEY);
@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
    }
  });
 
- // Helper para guardar en estado y en localStorage
+ // GUARDAR USUARIO EN ESTADO Y LOCALSTORAGE
  const setUser = useCallback((userData) => {
    setUserState(userData);
    if (userData) {
@@ -105,16 +105,15 @@ export function AuthProvider({ children }) {
    setUser(null);
  }, [setUser]);
 
- // EDICIÓN DE PERFIL (CONECTADA AL BACKEND)
+ // EDICION DE PERFIL
  const updateProfile = useCallback(async ({ nombre, email, tel }) => {
    if (!user) return { ok: false, message: 'No hay sesión activa.' };
    
    try {
-     // Endpoint PUT con el email como identificador
+     // ACTUALIZAR EN BD
      const response = await fetch(`${BASE_URL}/actualizar/${user.email}`, {
        method: 'PUT',
        headers: { 'Content-Type': 'application/json' },
-       // Mapeamos 'tel' a 'telefono' para el backend
        body: JSON.stringify({ 
          nombre: nombre, 
          email: email, 
@@ -128,7 +127,7 @@ export function AuthProvider({ children }) {
        return { ok: false, message: data.message || 'Error al actualizar.' };
      }
 
-     // Actualizamos sesión local con los datos del backend
+     // ACTUALIZAR SESION LOCAL
      const updatedUser = { 
        ...user, 
        nombre: data.nombre, 
@@ -147,7 +146,7 @@ export function AuthProvider({ children }) {
    }
  }, [user, setUser]);
 
- // ELIMINAR CUENTA (CONECTADA AL BACKEND)
+ // ELIMINAR CUENTA
  const eliminarCuenta = useCallback(async () => {
    if (!user) return { ok: false, message: 'No hay sesión activa.' };
 

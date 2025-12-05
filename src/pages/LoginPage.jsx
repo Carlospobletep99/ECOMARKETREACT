@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function LoginPage() {
-  // CONTEXTO Y ESTADOS DEL FORMULARIO
+  // ESTADOS DEL FORM
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', pass: '' });
@@ -15,17 +15,16 @@ export default function LoginPage() {
     document.title = 'Ingresar - Ecomarket';
   }, []);
 
-  // ACTUALIZA CAMPOS AL ESCRIBIR
+  // ACTUALIZAR CAMPOS
   const handleChange = event => {
     const { name, value } = event.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // INTENTA INICIAR SESIÓN Y REDIRIGE AL PERFIL
-  const handleSubmit = async (event) => { // <--- AGREGADO ASYNC
+  // SUBMIT LOGIN
+  const handleSubmit = async (event) => {
     event.preventDefault();
     
-    // AGREGADO AWAIT: Esperamos a que el backend responda
     const result = await login(form);
     
     setAlerta({ variant: result.ok ? 'success' : 'danger', message: result.message });

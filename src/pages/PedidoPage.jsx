@@ -11,7 +11,7 @@ function getTomorrowISO() {
 }
 
 export default function PedidoPage() {
-  // CONTEXTO DEL CARRITO Y DEL USUARIO
+  // CONTEXTOS
   const { cart, cartTotal, finalizeOrder } = useCarrito();
   const { user } = useAuth();
   const [form, setForm] = useState({ 
@@ -31,14 +31,14 @@ export default function PedidoPage() {
     document.title = 'Mi Pedido - Ecomarket';
   }, []);
 
-  // SINCRONIZA LOS CAMPOS DEL FORMULARIO
+  // ACTUALIZAR CAMPOS
   const handleChange = event => {
     const { name, value } = event.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // VALIDA LOS DATOS Y FINALIZA EL PEDIDO
-  const handleSubmit = async (event) => { // <--- AHORA ES ASYNC
+  // SUBMIT PEDIDO
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (cart.length === 0) {
       setAlerta({ variant: 'danger', message: 'Tu carrito está vacío. Agrega productos antes de confirmar.' });
@@ -55,19 +55,19 @@ export default function PedidoPage() {
         setAlerta({ variant: 'danger', message: 'Por favor, completa tus datos de contacto (email y teléfono).' });
         return;
       }
-      // Validación de formato de email
+      // VALIDAR EMAIL
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
         setAlerta({ variant: 'danger', message: 'Por favor, ingresa un correo electrónico válido.' });
         return;
       }
-      // Validación de teléfono
+      // VALIDAR TELEFONO
       if (!/^\+?\d+$/.test(form.tel.trim())) {
         setAlerta({ variant: 'danger', message: 'El número telefónico no es válido.' });
         return;
       }
     }
 
-    // <--- CORRECCIÓN PRINCIPAL: ESPERAMOS LA RESPUESTA DEL BACKEND --->
+    // FINALIZAR COMPRA
     const result = await finalizeOrder();
     
     if (!result.ok) {

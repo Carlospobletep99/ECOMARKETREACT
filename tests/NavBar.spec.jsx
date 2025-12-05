@@ -16,7 +16,7 @@ vi.mock('../src/context/CarritoContext.jsx', () => ({
 import { useAuth } from '../src/context/AuthContext.jsx';
 import { useCarrito } from '../src/context/CarritoContext.jsx';
 
-// RENDERIZA NAVBAR DENTRO DE UN ROUTER FALSO PARA PROBARLO:
+// RENDER CON ROUTER
 const renderNavBar = (initialPath = '/') => {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
@@ -26,12 +26,12 @@ const renderNavBar = (initialPath = '/') => {
 };
 
 describe('NavBar', () => {
-  // RESETEA LOS MOCKS ANTES DE CADA CASO:
+  // RESET MOCKS
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  // VALIDA LA VISTA PARA INVITADOS:
+  // TEST SIN SESION
   it('Muestra los enlaces publicos cuando NO hay sesión iniciada, oculta "Perfil"', () => {
     useAuth.mockReturnValue({ user: null });
     useCarrito.mockReturnValue({ openCart: vi.fn() });
@@ -48,7 +48,7 @@ describe('NavBar', () => {
     expect(screen.queryByRole('link', { name: 'Perfil' })).not.toBeInTheDocument();
   });
 
-  // COMPRUEBA EL FLUJO DE CLIENTE CON CARRITO DISPONIBLE:
+  // TEST CON SESION CLIENTE
   it('Oculta login/registro y abre el carrito cuando hay sesion iniciada', async () => {
     const openCart = vi.fn();
     useAuth.mockReturnValue({ user: { nombre: 'Ana', isAdmin: false } });
@@ -65,7 +65,7 @@ describe('NavBar', () => {
     expect(openCart).toHaveBeenCalledTimes(1);
   });
 
-  // ASEGURA LA VISTA EXCLUSIVA PARA ADMINISTRADORES:
+  // TEST ADMIN
   it('Muestra solo el enlace de administrador (panel de gestion) cuando el usuario es admin', () => {
     useAuth.mockReturnValue({ user: { nombre: 'Admin', isAdmin: true } });
     useCarrito.mockReturnValue({ openCart: vi.fn() });
